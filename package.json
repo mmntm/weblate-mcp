@@ -1,10 +1,13 @@
 {
   "name": "@mmntm/weblate-mcp",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "A Model Context Protocol (MCP) server for Weblate translation management",
   "author": "Your Name",
   "license": "MIT",
   "main": "dist/main.js",
+  "bin": {
+    "weblate-mcp": "dist/main.js"
+  },
   "files": [
     "dist/**/*",
     "README.md",
@@ -15,7 +18,8 @@
     "access": "public"
   },
   "scripts": {
-    "build": "nest build",
+    "build": "nest build && npm run postbuild",
+    "postbuild": "chmod +x dist/main.js",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "nest start",
     "dev": "nest start --watch",
@@ -91,10 +95,10 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/your-username/weblate-mcp-server.git"
+    "url": "git+https://github.com/mmntm/weblate-mcp.git"
   },
   "bugs": {
-    "url": "https://github.com/your-username/weblate-mcp-server/issues"
+    "url": "https://github.com/mmntm/weblate-mcp/issues"
   },
-  "homepage": "https://github.com/your-username/weblate-mcp-server#readme"
+  "homepage": "https://github.com/mmntm/weblate-mcp#readme"
 }

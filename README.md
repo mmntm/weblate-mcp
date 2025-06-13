@@ -40,6 +40,34 @@ The server will:
 
 ## 🚀 Quick Start
 
+### Option 1: Use with npx (Recommended)
+
+The easiest way to use this MCP server is with npx - no installation required!
+
+**For Claude Desktop or other MCP clients:**
+```json
+{
+  "mcpServers": {
+    "weblate": {
+      "command": "npx",
+      "args": ["-y", "@mmntm/weblate-mcp"],
+      "env": {
+        "WEBLATE_API_URL": "https://your-weblate-instance.com/api",
+        "WEBLATE_API_TOKEN": "your-weblate-api-token"
+      }
+    }
+  }
+}
+```
+
+**Manual testing:**
+```bash
+# Test the server directly
+npx @mmntm/weblate-mcp
+```
+
+### Option 2: Development Setup
+
 ### Prerequisites
 - Node.js 18+
 - pnpm package manager
@@ -74,8 +102,25 @@ LOG_LEVEL=info
 
 ## 🔗 MCP Client Configuration
 
-### Claude Desktop
+### Claude Desktop (npx method - Recommended)
 Add to your Claude Desktop config (`~/Library/Application Support/Claude/claude_desktop_config.json`):
+```json
+{
+  "mcpServers": {
+    "weblate": {
+      "command": "npx",
+      "args": ["-y", "@mmntm/weblate-mcp"],
+      "env": {
+        "WEBLATE_API_URL": "https://your-weblate-instance.com/api",
+        "WEBLATE_API_TOKEN": "your-weblate-api-token"
+      }
+    }
+  }
+}
+```
+
+### Claude Desktop (Development/Local)
+For development or local builds:
 ```json
 {
   "mcpServers": {
@@ -83,7 +128,7 @@ Add to your Claude Desktop config (`~/Library/Application Support/Claude/claude_
       "command": "node",
       "args": ["/path/to/weblate-mcp/dist/main.js"],
       "env": {
-        "WEBLATE_API_URL": "https://your-weblate-instance.com",
+        "WEBLATE_API_URL": "https://your-weblate-instance.com/api",
         "WEBLATE_API_TOKEN": "your-api-token"
       }
     }
