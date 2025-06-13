@@ -1,42 +1,26 @@
 # Weblate MCP Server
 
-A [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) server for intelligent translation migration between Weblate projects. This server enables contextual translation migration with smart matching and format transformation capabilities.
+A [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) server that provides seamless integration with Weblate translation management platform. This server enables AI assistants to interact directly with your Weblate instance for comprehensive translation management.
 
 ## 🌟 Features
 
-- **🔄 Intelligent Translation Migration**: Find and migrate translations between projects with context-aware matching
-- **🔧 Format Transformation**: Automatically convert between gettext (`%s`) and ICU message format (`{placeholder}`)
-- **🔍 Contextual Search**: Search for translations by content across projects
-- **🔑 Key-Based Discovery**: Search and find translations by key patterns, not just content
-- **📊 Project Management**: List projects, components, and languages
-- **✏️ Translation Updates**: Write and approve translations programmatically
+- **🔧 Complete Weblate API Access**: Full integration with Weblate's REST API
+- **🤖 AI-Powered Workflow**: Natural language interaction with your translation projects
+- **📊 Project Management**: Create, list, and manage translation projects
+- **🔍 Component Operations**: Handle translation components and configurations
+- **✏️ Translation Management**: Update, search, and manage translations
+- **🌐 Language Support**: Work with all supported languages in your Weblate instance
 - **🚀 Multiple Transports**: HTTP/SSE, Streamable HTTP, and STDIO support
 - **🛡️ Type Safety**: Full TypeScript implementation with comprehensive error handling
 
-## 🎯 Use Case
+## 🎯 What is This?
 
-Perfect for migrating from legacy projects (e.g., PHP with gettext format like `#g_loc_form_submit_btn`) to modern projects (e.g., React with ICU format like `forms.changeLocation.submit`).
+This MCP server acts as a bridge between AI assistants (like Claude Desktop) and your Weblate translation management platform. Instead of manually navigating the Weblate web interface, you can use natural language to:
 
-### 🔑 Key-Based Translation Discovery
-
-**The Problem**: You know a translation key exists in your project, but you don't know its exact location or content. Traditional search by content fails when you only have the key.
-
-**The Solution**: Our new key-based search functionality lets you:
-- **Find by Key**: `searchTranslationsByKey("user.profile")` finds all translations with keys containing "user.profile"
-- **Discover All Translations**: `findTranslationsForKey("common.submit")` shows this key across all components and languages
-- **Browse Keys**: `listTranslationKeys()` shows all available keys in a project
-- **Pattern Matching**: `searchTranslationKeys("button")` finds all button-related keys
-
-### 🔄 Intelligent Migration Workflow
-
-Instead of manually finding and copying translations, you can say:
-> "Migrate the Submit button translation from legacy-app to new-app"
-
-The server will:
-1. 🔍 Search for "Submit" in the legacy project (by content OR key)
-2. 🎯 Find the best matching translation using intelligent algorithms
-3. 🔄 Transform the format if needed (`%s` → `{placeholder}`)
-4. ✍️ Write it to the specified key in the new project
+- **"List all projects in my Weblate instance"**
+- **"Show me the French translations for the frontend component"**
+- **"Update the welcome message translation"**
+- **"Create a new translation project"**
 
 ## 🚀 Quick Start
 
@@ -146,121 +130,77 @@ For development or local builds:
 
 ## 🛠️ Available Tools
 
-### 🔄 Core Migration
+### 📊 Project Management
 | Tool | Description |
 |------|-------------|
-| **`migrateTranslationBetweenProjects`** | Intelligently migrate translations with format transformation |
+| **`list_projects`** | List all projects in your Weblate instance |
+| **`get_project`** | Get detailed information about a specific project |
+| **`create_project`** | Create a new translation project |
 
-### 🔍 Discovery & Search
+### 🔧 Component Management
 | Tool | Description |
 |------|-------------|
-| **`listProjects`** | List all Weblate projects |
-| **`listComponents`** | List components in a project |
-| **`listLanguages`** | List available languages |
-| **`searchStringInProject`** | Search for translations by content |
-| **`searchTranslationsByKey`** | Search for translations by key pattern |
-| **`findTranslationsForKey`** | Find all translations for a specific key across components/languages |
-| **`listTranslationKeys`** | List all translation keys in a project |
-| **`searchTranslationKeys`** | Search for translation keys by pattern |
+| **`list_components`** | List all components in a project |
+| **`get_component`** | Get detailed information about a component |
+| **`create_component`** | Create a new translation component |
 
-### 📝 Management
+### ✏️ Translation Management
 | Tool | Description |
 |------|-------------|
-| **`getTranslationForKey`** | Get specific translation by key |
-| **`writeTranslation`** | Update translation values |
+| **`list_translations`** | List all translations for a component |
+| **`get_translation`** | Get detailed information about a translation |
+| **`update_translation`** | Update translation strings |
+
+### 🌐 Language Management
+| Tool | Description |
+|------|-------------|
+| **`list_languages`** | List all available languages |
+| **`get_language`** | Get detailed information about a language |
 
 ## 💡 Usage Examples
 
-### Basic Migration
+### Project Operations
 ```typescript
-// Migrate a submit button
-await migrateTranslationBetweenProjects({
-  oldProjectSlug: "legacy-app",
-  newProjectSlug: "new-app",
-  newComponentSlug: "frontend",
-  newLanguageCode: "en",
-  targetKey: "forms.common.submit",
-  searchValue: "Submit"
+// List all projects
+await list_projects();
+
+// Get specific project details
+await get_project({ slug: "my-project" });
+
+// Create a new project
+await create_project({
+  name: "New Project",
+  slug: "new-project",
+  web: "https://example.com"
 });
 ```
 
-### Context-Aware Migration
+### Translation Operations
 ```typescript
-// Migrate with context for better matching
-await migrateTranslationBetweenProjects({
-  oldProjectSlug: "legacy-app",
-  newProjectSlug: "new-app",
-  newComponentSlug: "frontend",
-  newLanguageCode: "en",
-  targetKey: "errors.validation.email",
-  searchValue: "Invalid email",
-  contextDescription: "email validation in login form"
+// List translations for a component
+await list_translations({
+  project_slug: "my-project",
+  component_slug: "frontend"
+});
+
+// Get specific translation
+await get_translation({
+  project_slug: "my-project",
+  component_slug: "frontend",
+  language_code: "fr"
+});
+
+// Update translations
+await update_translation({
+  project_slug: "my-project",
+  component_slug: "frontend",
+  language_code: "fr",
+  translations: {
+    "welcome": "Bienvenue",
+    "goodbye": "Au revoir"
+  }
 });
 ```
-
-### Key-Based Search & Discovery
-```typescript
-// Find all translations for a specific key across all languages
-await findTranslationsForKey({
-  projectSlug: "my-app",
-  key: "common.button.submit"
-});
-
-// Search for translations by key pattern
-await searchTranslationsByKey({
-  projectSlug: "my-app",
-  keyPattern: "button",
-  exactMatch: false
-});
-
-// List all available translation keys
-await listTranslationKeys({
-  projectSlug: "my-app",
-  componentSlug: "frontend" // optional
-});
-
-// Search for keys matching a pattern
-await searchTranslationKeys({
-  projectSlug: "my-app",
-  keyPattern: "error",
-  componentSlug: "frontend" // optional
-});
-```
-
-### Bulk Migration Workflow
-```typescript
-// 1. Search for all error messages
-const errors = await searchStringInProject({
-  projectSlug: "legacy-app",
-  value: "error",
-  searchIn: "source"
-});
-
-// 2. Migrate each error with proper context
-for (const error of errors.matches) {
-  await migrateTranslationBetweenProjects({
-    oldProjectSlug: "legacy-app",
-    newProjectSlug: "new-app",
-    newComponentSlug: "frontend",
-    newLanguageCode: "en",
-    targetKey: generateNewKey(error.key), // Your custom logic
-    searchValue: error.source,
-    contextDescription: `Error message: ${error.context}`
-  });
-}
-```
-
-## 🔧 Format Transformation
-
-Automatically converts between translation formats:
-
-| Old Format (gettext) | New Format (ICU) | Example |
-|---------------------|------------------|---------|
-| `%s` | `{placeholder}` | `"Hello %s"` → `"Hello {placeholder}"` |
-| `%{name}` | `{name}` | `"Hello %{name}"` → `"Hello {name}"` |
-| `%d`, `%i` | `{number}` | `"Found %d items"` → `"Found {number} items"` |
-| `%f` | `{decimal}` | `"Price: %f"` → `"Price: {decimal}"` |
-| `$variable` | `{variable}` | `"Hello $user"` → `"Hello {user}"` |
 
 ## 📚 Documentation
 
@@ -284,11 +224,11 @@ Automatically converts between translation formats:
                               │
                               ▼
                        ┌──────────────────┐
-                       │   7 MCP Tools    │
-                       │ • listProjects   │
-                       │ • searchString   │
-                       │ • migrate...     │
-                       │ • etc.          │
+                       │   MCP Tools      │
+                       │ • Projects       │
+                       │ • Components     │
+                       │ • Translations   │
+                       │ • Languages      │
                        └──────────────────┘
 ```
 
@@ -297,65 +237,68 @@ Automatically converts between translation formats:
 - **TypeScript**: Full type safety and IntelliSense support
 - **Weblate REST API**: Comprehensive API wrapper with interfaces
 - **MCP Protocol**: Standard Model Context Protocol implementation
-- **Zod**: Runtime type validation for all inputs
+- **Axios**: HTTP client for API communication
 
 ## 🧪 Development
 
 ### Development Setup
 ```bash
 # Start development server with hot reload
-pnpm start:dev
+pnpm run dev
 
 # Run tests
 pnpm test
 
 # Run end-to-end tests
-pnpm test:e2e
+pnpm run test:e2e
 
 # Generate test coverage
-pnpm test:cov
+pnpm run test:cov
 
 # Build for production
 pnpm build
 ```
 
 ### Adding New Tools
-1. Create tool file in `src/mcp/tools/`
-2. Implement with `@Tool` decorator
-3. Add to `McpModule` providers
+1. Create tool file in `src/tools/`
+2. Implement MCP tool interface
+3. Add to service providers
 4. Write tests
 5. Update documentation
 
-See [Development Guide](./docs/development.md) for detailed instructions.
+See [Development Guide](./docs/DEVELOPMENT.md) for detailed instructions.
 
 ## 🎯 Use Cases
 
-### Legacy to Modern Migration
-- **PHP gettext** → **JavaScript/TypeScript i18n**
-- **Rails i18n** → **React Intl**
-- **Old key structures** → **Organized hierarchies**
+### Translation Management
+- **Project oversight**: Monitor translation progress across projects
+- **Content updates**: Update translations programmatically
+- **Quality assurance**: Review and approve translations
+- **Team coordination**: Manage translation workflows
 
-### Development Workflow Integration
-- Say **"migrate the cancel button"** while coding
-- Server finds, transforms, and writes the translation
-- Focus on building, not translation management
+### Development Integration
+- **CI/CD pipelines**: Automate translation updates in deployment
+- **Content management**: Sync translations with content systems
+- **Localization testing**: Validate translations in different contexts
+- **Documentation**: Generate translation reports and statistics
 
-### Translation Maintenance
-- **Bulk find-and-replace** operations
-- **Status and approval** management
-- **Cross-project consistency** checks
+### AI-Assisted Workflows
+- **Natural language queries**: Ask about translation status in plain English
+- **Contextual operations**: AI understands your translation needs
+- **Batch operations**: Perform bulk updates with AI assistance
+- **Smart suggestions**: Get AI-powered translation recommendations
 
 ## 🔒 Security & Production
 
 - **API Token Security**: Store tokens securely, use environment variables
 - **Rate Limiting**: Built-in request throttling and retry logic
 - **Error Handling**: Comprehensive error responses with debugging info
-- **Health Checks**: `/health` endpoint for monitoring
-- **Docker Support**: Production-ready containerization
+- **Input Validation**: All inputs validated with Zod schemas
+- **HTTPS Support**: Secure communication with Weblate instances
 
 ## 🤝 Contributing
 
-We welcome contributions! Please see our [Contributing Guidelines](./docs/development.md#contributing):
+We welcome contributions! Please see our [Contributing Guidelines](./docs/DEVELOPMENT.md#contributing):
 
 1. **Fork** the repository
 2. **Create** a feature branch from main
@@ -384,4 +327,4 @@ MIT License - see [LICENSE](./LICENSE) file for details.
 
 **Built with ❤️ for the translation community**
 
-*Need help? Check our [documentation](./docs/) or create an [issue](./issues)!* 
+*Need help? Check our [documentation](./docs/) or create an [issue](https://github.com/mmntm/weblate-mcp/issues)!* 

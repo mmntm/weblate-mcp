@@ -62,26 +62,26 @@ Add to your Claude Desktop configuration:
 
 ## 📖 Available Tools
 
-The MCP server provides the following tools for interacting with Weblate:
+The MCP server provides comprehensive tools for interacting with Weblate:
 
 ### Project Management
-- `list_projects` - List all projects
-- `get_project` - Get project details
-- `create_project` - Create a new project
+- `list_projects` - List all projects in your Weblate instance
+- `get_project` - Get detailed information about a specific project
+- `create_project` - Create a new translation project
 
 ### Component Management
-- `list_components` - List components in a project
-- `get_component` - Get component details
-- `create_component` - Create a new component
+- `list_components` - List all components in a project
+- `get_component` - Get detailed information about a component
+- `create_component` - Create a new translation component
 
 ### Translation Management
-- `list_translations` - List translations for a component
-- `get_translation` - Get translation details
+- `list_translations` - List all translations for a component
+- `get_translation` - Get detailed information about a translation
 - `update_translation` - Update translation strings
 
 ### Language Management
-- `list_languages` - List available languages
-- `get_language` - Get language details
+- `list_languages` - List all available languages
+- `get_language` - Get detailed information about a language
 
 ## 🏗️ Architecture
 
