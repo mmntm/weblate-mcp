@@ -1,6 +1,6 @@
 {
   "name": "weblate-mcp-server",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A Model Context Protocol (MCP) server for Weblate translation management",
   "author": "Your Name",
   "license": "MIT",
@@ -97,4 +97,4 @@
     "url": "https://github.com/your-username/weblate-mcp-server/issues"
   },
   "homepage": "https://github.com/your-username/weblate-mcp-server#readme"
-} 
+}
