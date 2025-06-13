@@ -266,12 +266,13 @@ Automatically converts between translation formats:
 
 | Document | Description |
 |----------|-------------|
-| **[📖 Documentation Overview](./docs/README.md)** | Complete documentation hub |
-| **[⚙️ Setup Guide](./docs/setup.md)** | Installation and configuration |
-| **[📋 API Documentation](./docs/api.md)** | All tools with examples and parameters |
-| **[🔄 Migration Guide](./docs/migration-guide.md)** | Step-by-step migration workflows |
-| **[🔌 Client Configuration](./docs/mcp-client-config.md)** | Configure various MCP clients |
-| **[🛠️ Development Guide](./docs/development.md)** | Contributing and extending the server |
+| **[📖 Documentation Hub](./docs/README.md)** | Complete documentation overview and quick start |
+| **[🚀 Installation & Setup](./docs/MCP_SETUP.md)** | Installation, configuration, and Claude Desktop setup |
+| **[📋 API Reference](./docs/API.md)** | Complete API documentation with examples |
+| **[🛠️ Development Guide](./docs/DEVELOPMENT.md)** | Contributing, development setup, and testing |
+| **[🏗️ Architecture](./docs/ARCHITECTURE.md)** | Codebase structure, patterns, and design decisions |
+| **[📦 Release Process](./docs/RELEASE.md)** | Release management and publishing workflow |
+| **[🔄 Changesets Guide](./docs/CHANGESETS.md)** | Version management with changesets |
 
 ## 🏗️ Architecture
 
