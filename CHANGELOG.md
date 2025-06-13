@@ -1,5 +1,11 @@
 # weblate-mcp-server
 
+## 1.0.3
+
+### Patch Changes
+
+- 2b13d64: Update repository links
+
 ## 1.0.2
 
 ### Patch Changes
