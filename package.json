@@ -1,5 +1,5 @@
 {
-  "name": "weblate-mcp-server",
+  "name": "@mmntm/weblate-mcp",
   "version": "1.0.1",
   "description": "A Model Context Protocol (MCP) server for Weblate translation management",
   "author": "Your Name",
