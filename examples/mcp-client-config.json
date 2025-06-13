@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "weblate": {
+      "command": "node",
+      "args": [
+        "/path/to/weblate-mcp-server/dist/main.js"
+      ],
+      "env": {
+        "WEBLATE_API_URL": "https://your-weblate-instance.com/api/",
+        "WEBLATE_API_TOKEN": "your-api-token-here"
+      }
+    }
+  }
+} 
