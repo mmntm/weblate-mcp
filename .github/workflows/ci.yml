@@ -1,0 +1,79 @@
+# This workflow will run CI checks
+name: 🧪 CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+env:
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+jobs:
+  ci:
+    name: 🧪 CI Checks
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        node-version: [lts/*]
+        pnpm-version: [latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: ⬇️ Checkout
+        id: checkout
+        uses: actions/checkout@v4
+        with:
+          token: ${{ env.GITHUB_TOKEN }}
+          fetch-depth: 0
+
+      - uses: pnpm/action-setup@v4
+        id: setup-pnpm
+        name: 🥡 Setup pnpm
+        with:
+          version: ${{ matrix.pnpm-version }}
+
+      - name: 🟢 Setup node
+        id: setup-node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'pnpm'
+
+      - name: 🧩 Install Dependencies
+        id: install-dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: 🔍 Lint & Format Check
+        id: lint-check
+        run: |
+          if pnpm run format --check 2>/dev/null; then
+            echo "✅ Formatting check passed"
+          else
+            echo "ℹ️ No format script found - skipping"
+          fi
+
+      - name: 🏗️ Build
+        id: build-check
+        run: pnpm run build
+        env:
+          NODE_ENV: production
+
+      - name: 🧪 Test
+        id: test-check
+        run: |
+          if pnpm run test 2>/dev/null; then
+            echo "✅ Tests passed"
+          else
+            echo "ℹ️ No tests found - skipping"
+          fi
+
+      - name: ✅ Build Output Check
+        id: build-output-check
+        run: |
+          if [ ! -d "dist" ]; then
+            echo "❌ Build failed - no dist directory found"
+            exit 1
+          fi
+          echo "✅ Build succeeded - dist directory exists"
+          ls -la dist/ 

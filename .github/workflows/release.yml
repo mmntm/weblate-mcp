@@ -1,0 +1,103 @@
+# This workflow will release the package with Changesets
+name: 📦 Release Package
+
+on:
+  push:
+    branches:
+      - main
+
+concurrency: ${{ github.workflow }}-${{ github.ref }}
+
+permissions:
+  contents: write
+  pull-requests: write
+  packages: write
+  actions: write
+
+env:
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+jobs:
+  release:
+    name: 📦 Release Package
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        node-version: [lts/*]
+        pnpm-version: [latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: ⬇️ Checkout
+        id: checkout
+        uses: actions/checkout@v4
+        with:
+          token: ${{ env.GITHUB_TOKEN }}
+          fetch-depth: 0
+
+      - uses: pnpm/action-setup@v4
+        id: setup-pnpm
+        name: 🥡 Setup pnpm
+        with:
+          version: ${{ matrix.pnpm-version }}
+
+      - name: 🟢 Setup node
+        id: setup-node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          registry-url: 'https://registry.npmjs.org'
+          cache: 'pnpm'
+
+      - name: 🧩 Install Dependencies
+        id: install-dependencies
+        run: pnpm install --frozen-lockfile
+        env:
+          NPM_TOKEN: ${{ env.NPM_TOKEN }}
+
+      - name: 🏗️ Build
+        id: build-package
+        run: pnpm run build
+        env:
+          NODE_ENV: production
+          NPM_TOKEN: ${{ env.NPM_TOKEN }}
+
+      - name: 📣 Create Release Pull Request or Publish to npm
+        id: changesets
+        uses: changesets/action@v1
+        with:
+          title: "chore(project): version package and make a release"
+          publish: pnpm run changeset:publish
+          version: pnpm run changeset:version
+          commit: "chore(project): version package [skip ci]"
+        env:
+          GITHUB_TOKEN: ${{ env.GITHUB_TOKEN }}
+          NPM_TOKEN: ${{ env.NPM_TOKEN }}
+
+      - name: Create GitHub Release
+        if: steps.changesets.outputs.published == 'true'
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ fromJson(steps.changesets.outputs.publishedPackages)[0].version }}
+          name: Release v${{ fromJson(steps.changesets.outputs.publishedPackages)[0].version }}
+          body: |
+            ## 🚀 What's Changed
+            
+            This release includes the following changes:
+            
+            ${{ steps.changesets.outputs.publishedPackages && fromJson(steps.changesets.outputs.publishedPackages)[0].changesets }}
+            
+            ## 📋 Full Changelog
+            
+            See the complete changelog at: https://github.com/${{ github.repository }}/blob/main/CHANGELOG.md
+            
+            ## 📦 Installation
+            
+            ```bash
+            npm install weblate-mcp-server@${{ fromJson(steps.changesets.outputs.publishedPackages)[0].version }}
+            # or
+            pnpm add weblate-mcp-server@${{ fromJson(steps.changesets.outputs.publishedPackages)[0].version }}
+            ```
+          draft: false
+          prerelease: false
+          generate_release_notes: true 
