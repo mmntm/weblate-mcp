@@ -2,6 +2,10 @@
 
 A [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) server that provides seamless integration with Weblate translation management platform. This server enables AI assistants to interact directly with your Weblate instance for comprehensive translation management.
 
+<a href="https://glama.ai/mcp/servers/@mmntm/weblate-mcp">
+  <img width="380" height="200" src="https://glama.ai/mcp/servers/@mmntm/weblate-mcp/badge" alt="Weblate Server MCP server" />
+</a>
+
 ## 🌟 Features
 
 - **🔧 Complete Weblate API Access**: Full integration with Weblate's REST API
@@ -327,4 +331,4 @@ MIT License - see [LICENSE](./LICENSE) file for details.
 
 **Built with ❤️ for the translation community**
 
-*Need help? Check our [documentation](./docs/) or create an [issue](https://github.com/mmntm/weblate-mcp/issues)!* 
+*Need help? Check our [documentation](./docs/) or create an [issue](https://github.com/mmntm/weblate-mcp/issues)!*
