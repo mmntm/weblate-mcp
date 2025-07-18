@@ -148,6 +148,7 @@ For development or local builds:
 | **`searchStringInProject`** | Search for translations containing specific text in a project |
 | **`getTranslationForKey`** | Get translation value for a specific key |
 | **`writeTranslation`** | Update or write translation values with approval support |
+| **`bulkWriteTranslations`** ⚡ | **Batch update multiple translations efficiently with error handling** |
 | **`findTranslationsForKey`** | Find all translations for a specific key across languages |
 
 #### 🚀 Why searchUnitsWithFilters is Recommended

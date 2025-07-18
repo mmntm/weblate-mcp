@@ -310,6 +310,75 @@ Update or write a translation value for a specific key.
 }
 ```
 
+### `bulkWriteTranslations` ⚡ **Efficient Batch Updates**
+
+Update multiple translations in batch for efficient bulk operations with concurrency control and detailed error reporting.
+
+**Parameters:**
+- `projectSlug` (string, required): The slug of the project
+- `componentSlug` (string, required): The slug of the component
+- `languageCode` (string, required): The language code (e.g., "en", "es", "fr")
+- `translations` (array, required): Array of translation objects to update
+
+**Translation Object Structure:**
+- `key` (string, required): The translation key to update
+- `value` (string, required): The new translation value
+- `markAsApproved` (boolean, optional): Whether to mark as approved (default: false)
+
+**Returns:**
+```typescript
+{
+  successful: Array<{ key: string; unit: Unit }>;
+  failed: Array<{ key: string; error: string }>;
+  summary: {
+    total: number;
+    successful: number;
+    failed: number;
+  };
+  formattedReport: string; // Human-readable summary
+}
+```
+
+**Features:**
+- **Concurrency Control**: Processes 5 translations at a time to avoid API overload
+- **Error Isolation**: Individual failures don't stop the entire batch
+- **Detailed Reporting**: Success/failure breakdown with specific error messages
+- **Progress Tracking**: Server-side logging for monitoring large batches
+
+**Example:**
+```json
+{
+  "name": "bulkWriteTranslations",
+  "arguments": {
+    "projectSlug": "myproject",
+    "componentSlug": "frontend",
+    "languageCode": "fr",
+    "translations": [
+      {
+        "key": "welcome.message",
+        "value": "Bienvenue sur notre plateforme",
+        "markAsApproved": true
+      },
+      {
+        "key": "login.button",
+        "value": "Se connecter",
+        "markAsApproved": false
+      },
+      {
+        "key": "error.invalid",
+        "value": "Données invalides"
+      }
+    ]
+  }
+}
+```
+
+**Use Cases:**
+- **CSV/Excel Import**: Bulk import from translation files
+- **Mass Corrections**: Fix common errors across multiple strings
+- **Batch Approvals**: Mark multiple translations as approved
+- **Migration**: Transfer translations between components
+
 ### `findTranslationsForKey`
 
 Find all translations for a specific key across all components and languages in a project.

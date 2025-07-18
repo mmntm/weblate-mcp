@@ -77,6 +77,7 @@ The MCP server provides comprehensive tools for interacting with Weblate:
 - `searchStringInProject` - Search for translations containing specific text
 - `getTranslationForKey` - Get translation value for a specific key
 - `writeTranslation` - Update or write translation values with approval support
+- `bulkWriteTranslations` ⚡ - **Batch update multiple translations efficiently**
 - `findTranslationsForKey` - Find all translations for a specific key
 
 ### Language Management

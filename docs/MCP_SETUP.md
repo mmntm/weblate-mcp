@@ -109,6 +109,7 @@ Once configured, you'll have access to these translation management tools:
 - **searchStringInProject** - Search for translations containing specific text
 - **getTranslationForKey** - Get translation value for a specific key
 - **writeTranslation** - Write or update a translation value
+- **bulkWriteTranslations** ⚡ - **Batch update multiple translations efficiently**
 - **findTranslationsForKey** - Find all translations for a specific key
 
 ## Usage Examples
@@ -132,6 +133,14 @@ Use `searchUnitsWithFilters` for the most efficient queries:
 > "Find all translations containing 'login' in the 'web-frontend' project"
 
 > "Update the French translation for key 'welcome.message' to 'Bienvenue sur notre plateforme'"
+
+### ⚡ Efficient Bulk Updates
+
+> "Update multiple French translations for the 'frontend' component using `bulkWriteTranslations` with this data: [{'key': 'login.button', 'value': 'Se connecter'}, {'key': 'logout.button', 'value': 'Se déconnecter'}]"
+
+> "Import these 10 translations from my CSV file using `bulkWriteTranslations`"
+
+> "Mark these 5 translations as approved in batch using `bulkWriteTranslations`"
 
 ### 🚀 Why searchUnitsWithFilters is Better
 

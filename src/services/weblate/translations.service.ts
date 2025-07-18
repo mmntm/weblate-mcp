@@ -197,6 +197,82 @@ export class WeblateTranslationsService {
     }
   }
 
+  /**
+   * Bulk update multiple translations efficiently
+   */
+  async bulkWriteTranslations(
+    projectSlug: string,
+    componentSlug: string,
+    languageCode: string,
+    translations: Array<{
+      key: string;
+      value: string;
+      markAsApproved?: boolean;
+    }>,
+  ): Promise<{
+    successful: Array<{ key: string; unit: Unit }>;
+    failed: Array<{ key: string; error: string }>;
+    summary: {
+      total: number;
+      successful: number;
+      failed: number;
+    };
+  }> {
+    const successful: Array<{ key: string; unit: Unit }> = [];
+    const failed: Array<{ key: string; error: string }> = [];
+
+    this.logger.log(`Starting bulk update of ${translations.length} translations for ${projectSlug}/${componentSlug}/${languageCode}`);
+
+    // Process translations in parallel (but with some concurrency control)
+    const concurrencyLimit = 5; // Limit concurrent requests to avoid overwhelming the API
+    const chunks = [];
+    for (let i = 0; i < translations.length; i += concurrencyLimit) {
+      chunks.push(translations.slice(i, i + concurrencyLimit));
+    }
+
+    for (const chunk of chunks) {
+      const promises = chunk.map(async ({ key, value, markAsApproved = false }) => {
+        try {
+          const updatedUnit = await this.writeTranslation(
+            projectSlug,
+            componentSlug,
+            languageCode,
+            key,
+            value,
+            markAsApproved,
+          );
+
+          if (updatedUnit) {
+            successful.push({ key, unit: updatedUnit });
+            this.logger.debug(`Successfully updated translation for key: ${key}`);
+          } else {
+            failed.push({ key, error: 'No unit returned from update' });
+          }
+        } catch (error) {
+          failed.push({ key, error: error.message });
+          this.logger.warn(`Failed to update translation for key ${key}: ${error.message}`);
+        }
+      });
+
+      // Wait for current chunk to complete before processing next chunk
+      await Promise.allSettled(promises);
+    }
+
+    const summary = {
+      total: translations.length,
+      successful: successful.length,
+      failed: failed.length,
+    };
+
+    this.logger.log(`Bulk update completed: ${summary.successful}/${summary.total} successful, ${summary.failed} failed`);
+
+    return {
+      successful,
+      failed,
+      summary,
+    };
+  }
+
   async findTranslationsForKey(
     projectSlug: string,
     key: string,

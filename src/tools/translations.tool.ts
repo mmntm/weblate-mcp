@@ -213,6 +213,93 @@ export class WeblateTranslationsTool {
   }
 
   @Tool({
+    name: 'bulkWriteTranslations',
+    description: 'Update multiple translations in batch for efficient bulk operations',
+    parameters: z.object({
+      projectSlug: z.string().describe('The slug of the project'),
+      componentSlug: z.string().describe('The slug of the component'),
+      languageCode: z.string().describe('The language code (e.g., en, es, fr)'),
+      translations: z.array(z.object({
+        key: z.string().describe('The translation key to update'),
+        value: z.string().describe('The new translation value'),
+        markAsApproved: z.boolean().optional().describe('Whether to mark as approved (default: false)').default(false),
+      })).describe('Array of translations to update'),
+    }),
+  })
+  async bulkWriteTranslations({
+    projectSlug,
+    componentSlug,
+    languageCode,
+    translations,
+  }: {
+    projectSlug: string;
+    componentSlug: string;
+    languageCode: string;
+    translations: Array<{
+      key: string;
+      value: string;
+      markAsApproved?: boolean;
+    }>;
+  }) {
+    try {
+      const result = await this.weblateApiService.bulkWriteTranslations(
+        projectSlug,
+        componentSlug,
+        languageCode,
+        translations,
+      );
+
+      let resultText = `Bulk translation update completed for ${projectSlug}/${componentSlug}/${languageCode}\n\n`;
+      
+      resultText += `📊 **Summary:**\n`;
+      resultText += `- Total: ${result.summary.total}\n`;
+      resultText += `- ✅ Successful: ${result.summary.successful}\n`;
+      resultText += `- ❌ Failed: ${result.summary.failed}\n\n`;
+
+      if (result.successful.length > 0) {
+        resultText += `✅ **Successfully Updated (${result.successful.length}):**\n`;
+        result.successful.slice(0, 10).forEach(({ key }) => {
+          resultText += `- ${key}\n`;
+        });
+        if (result.successful.length > 10) {
+          resultText += `... and ${result.successful.length - 10} more\n`;
+        }
+        resultText += '\n';
+      }
+
+      if (result.failed.length > 0) {
+        resultText += `❌ **Failed Updates (${result.failed.length}):**\n`;
+        result.failed.slice(0, 5).forEach(({ key, error }) => {
+          resultText += `- ${key}: ${error}\n`;
+        });
+        if (result.failed.length > 5) {
+          resultText += `... and ${result.failed.length - 5} more failures\n`;
+        }
+      }
+
+      return {
+        content: [
+          {
+            type: 'text',
+            text: resultText,
+          },
+        ],
+      };
+    } catch (error) {
+      this.logger.error(`Failed to bulk write translations`, error);
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `Error during bulk translation update: ${error.message}`,
+          },
+        ],
+        isError: true,
+      };
+    }
+  }
+
+  @Tool({
     name: 'findTranslationsForKey',
     description: 'Find all translations for a specific key across all components and languages in a project',
     parameters: z.object({

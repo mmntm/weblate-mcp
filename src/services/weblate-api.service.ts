@@ -107,6 +107,32 @@ export class WeblateApiService {
     );
   }
 
+  async bulkWriteTranslations(
+    projectSlug: string,
+    componentSlug: string,
+    languageCode: string,
+    translations: Array<{
+      key: string;
+      value: string;
+      markAsApproved?: boolean;
+    }>,
+  ): Promise<{
+    successful: Array<{ key: string; unit: Unit }>;
+    failed: Array<{ key: string; error: string }>;
+    summary: {
+      total: number;
+      successful: number;
+      failed: number;
+    };
+  }> {
+    return this.translationsService.bulkWriteTranslations(
+      projectSlug,
+      componentSlug,
+      languageCode,
+      translations,
+    );
+  }
+
   async searchTranslationKeys(
     projectSlug: string,
     keyPattern: string,
