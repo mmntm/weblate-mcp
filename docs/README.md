@@ -73,13 +73,11 @@ The MCP server provides comprehensive tools for interacting with Weblate:
 - Component details with source language information
 
 ### Translation Management
+- `searchUnitsWithFilters` ⭐ - **Efficient search using Weblate's native filtering syntax**
 - `searchStringInProject` - Search for translations containing specific text
 - `getTranslationForKey` - Get translation value for a specific key
 - `writeTranslation` - Update or write translation values with approval support
-- `searchTranslationsByKey` - Search for translations by key pattern
 - `findTranslationsForKey` - Find all translations for a specific key
-- `listTranslationKeys` - List all translation keys in a project
-- `searchTranslationKeys` - Search for translation keys by pattern
 
 ### Language Management
 - `listLanguages` - List languages available in a specific project

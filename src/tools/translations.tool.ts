@@ -213,82 +213,6 @@ export class WeblateTranslationsTool {
   }
 
   @Tool({
-    name: 'searchTranslationsByKey',
-    description: 'Search for translations by key pattern across components in a project',
-    parameters: z.object({
-      projectSlug: z.string().describe('The slug of the project to search in'),
-      keyPattern: z.string().describe('The key pattern to search for (supports partial matching)'),
-      componentSlug: z.string().optional().describe('Optional: limit search to specific component'),
-      languageCode: z.string().optional().describe('Optional: limit search to specific language'),
-      exactMatch: z.boolean().optional().describe('Whether to match the key exactly (default: false)').default(false),
-    }),
-  })
-  async searchTranslationsByKey({
-    projectSlug,
-    keyPattern,
-    componentSlug,
-    languageCode,
-    exactMatch = false,
-  }: {
-    projectSlug: string;
-    keyPattern: string;
-    componentSlug?: string;
-    languageCode?: string;
-    exactMatch?: boolean;
-  }) {
-    try {
-      const results = await this.weblateApiService.searchTranslationKeys(
-        projectSlug,
-        keyPattern,
-        componentSlug,
-      );
-
-      if (results.length === 0) {
-        return {
-          content: [
-            {
-              type: 'text',
-              text: `No translations found for key pattern "${keyPattern}" in project "${projectSlug}"`,
-            },
-          ],
-        };
-      }
-
-      const formattedResults = results
-        .slice(0, 50)
-        .map(key => `- ${key}`)
-        .join('\n');
-      const totalText =
-        results.length > 50
-          ? `\n\n*Showing first 50 of ${results.length} keys*`
-          : '';
-
-      return {
-        content: [
-          {
-            type: 'text',
-            text: `Found ${results.length} translation keys matching pattern "${keyPattern}" in project "${projectSlug}":\n\n${formattedResults}${totalText}`,
-          },
-        ],
-      };
-    } catch (error) {
-      this.logger.error(
-        `Failed to search translations by key pattern "${keyPattern}" in ${projectSlug}`,
-        error,
-      );
-      return {
-        content: [
-          {
-            type: 'text',
-            text: `Error searching for key pattern "${keyPattern}" in project "${projectSlug}": ${error.message}`,
-          },
-        ],
-        isError: true,
-      };
-    }
-  }
-
-  @Tool({
     name: 'findTranslationsForKey',
     description: 'Find all translations for a specific key across all components and languages in a project',
     parameters: z.object({
@@ -367,130 +291,66 @@ export class WeblateTranslationsTool {
   }
 
   @Tool({
-    name: 'listTranslationKeys',
-    description: 'List all translation keys in a project (optionally filtered by component)',
+    name: 'searchUnitsWithFilters',
+    description: 'Search translation units using Weblate\'s powerful filtering syntax. Supports filters like: state:<translated (untranslated), state:>=translated (translated), component:NAME, source:TEXT, target:TEXT, has:suggestion, etc.',
     parameters: z.object({
       projectSlug: z.string().describe('The slug of the project'),
-      componentSlug: z.string().optional().describe('Optional: filter by specific component'),
-      languageCode: z.string().optional().describe('Optional: filter by specific language'),
+      componentSlug: z.string().describe('The slug of the component'),
+      languageCode: z.string().describe('The language code (e.g., sk, cs, fr)'),
+      searchQuery: z.string().describe('Weblate search query using their filter syntax. Examples: "state:<translated" (untranslated), "state:>=translated" (translated), "source:hello", "has:suggestion", "component:common AND state:<translated"'),
+      limit: z.number().optional().default(50).describe('Maximum number of results to return (default: 50, max: 200)'),
     }),
   })
-  async listTranslationKeys({
+  async searchUnitsWithFilters({
     projectSlug,
     componentSlug,
     languageCode,
+    searchQuery,
+    limit = 50,
   }: {
     projectSlug: string;
-    componentSlug?: string;
-    languageCode?: string;
+    componentSlug: string;
+    languageCode: string;
+    searchQuery: string;
+    limit?: number;
   }) {
     try {
-      const keys = await this.weblateApiService.listTranslationKeys(
+      const results = await this.weblateApiService.searchUnitsWithQuery(
         projectSlug,
         componentSlug,
         languageCode,
+        searchQuery,
+        Math.min(limit, 200), // Cap at 200 to prevent overwhelming responses
       );
 
-      if (keys.length === 0) {
+      if (results.length === 0) {
         return {
           content: [
             {
               type: 'text',
-              text: `No translation keys found in project "${projectSlug}"`,
+              text: `No units found matching query "${searchQuery}" in ${projectSlug}/${componentSlug}/${languageCode}`,
             },
           ],
         };
       }
 
-      const keyList = keys.slice(0, 50).map(key => `- ${key}`).join('\n');
-      const totalText = keys.length > 50
-        ? `\n\n*Showing first 50 of ${keys.length} keys*`
-        : '';
-
+      const resultText = this.formatFilteredResults(results, projectSlug, componentSlug, languageCode, searchQuery);
+      
       return {
         content: [
           {
             type: 'text',
-            text: `Found ${keys.length} translation keys in project "${projectSlug}":\n\n${keyList}${totalText}`,
+            text: resultText,
           },
         ],
       };
     } catch (error) {
-      this.logger.error(
-        `Failed to list translation keys in ${projectSlug}`,
-        error,
-      );
+      this.logger.error('Failed to search units with filters', error);
       return {
         content: [
           {
             type: 'text',
-            text: `Error listing translation keys in project "${projectSlug}": ${error.message}`,
-          },
-        ],
-        isError: true,
-      };
-    }
-  }
-
-  @Tool({
-    name: 'searchTranslationKeys',
-    description: 'Search for translation keys by pattern in a project',
-    parameters: z.object({
-      projectSlug: z.string().describe('The slug of the project'),
-      keyPattern: z.string().describe('The pattern to search for in key names (case-insensitive)'),
-      componentSlug: z.string().optional().describe('Optional: limit search to specific component'),
-    }),
-  })
-  async searchTranslationKeys({
-    projectSlug,
-    keyPattern,
-    componentSlug,
-  }: {
-    projectSlug: string;
-    keyPattern: string;
-    componentSlug?: string;
-  }) {
-    try {
-      const keys = await this.weblateApiService.searchTranslationKeys(
-        projectSlug,
-        keyPattern,
-        componentSlug,
-      );
-
-      if (keys.length === 0) {
-        return {
-          content: [
-            {
-              type: 'text',
-              text: `No translation keys found matching pattern "${keyPattern}" in project "${projectSlug}"`,
-            },
-          ],
-        };
-      }
-
-      const keyList = keys.slice(0, 50).map(key => `- ${key}`).join('\n');
-      const totalText = keys.length > 50
-        ? `\n\n*Showing first 50 of ${keys.length} matching keys*`
-        : '';
-
-      return {
-        content: [
-          {
-            type: 'text',
-            text: `Found ${keys.length} translation keys matching pattern "${keyPattern}" in project "${projectSlug}":\n\n${keyList}${totalText}`,
-          },
-        ],
-      };
-    } catch (error) {
-      this.logger.error(
-        `Failed to search translation keys by pattern "${keyPattern}" in ${projectSlug}`,
-        error,
-      );
-      return {
-        content: [
-          {
-            type: 'text',
-            text: `Error searching translation keys by pattern "${keyPattern}" in project "${projectSlug}": ${error.message}`,
+            text: `Error searching units: ${error.message}`,
           },
         ],
         isError: true,
@@ -520,5 +380,45 @@ export class WeblateTranslationsTool {
 **Context:** ${translation.context || '(none)'}
 **Note:** ${translation.note || '(none)'}
 **ID:** ${translation.id}`;
+  }
+
+  private formatFilteredResults(results: Unit[], projectSlug: string, componentSlug: string, languageCode: string, searchQuery: string): string {
+    if (results.length === 0) {
+      return `No units found in ${projectSlug}/${componentSlug}/${languageCode} matching query: ${searchQuery}`;
+    }
+
+    const formattedResults = results
+      .slice(0, 50) // Limit to 50 for readability
+      .map(unit => {
+        const sourceText = unit.source && Array.isArray(unit.source) 
+          ? unit.source.join('') 
+          : (unit.source || '(empty)');
+        const targetText = unit.target && Array.isArray(unit.target) 
+          ? unit.target.join('') 
+          : (unit.target || '(empty)');
+
+        // Determine status based on state
+        let status = '❓ Unknown';
+        if (unit.state === 0) status = '❌ Untranslated';
+        else if (unit.state === 10) status = '🔄 Needs Editing';
+        else if (unit.state === 20) status = '✅ Translated';
+        else if (unit.state === 30) status = '✅ Approved';
+        else if (unit.state === 100) status = '🔒 Read-only';
+
+        return `**Key:** ${unit.context || '(no context)'}
+**Source:** ${sourceText}
+**Target:** ${targetText}
+**Status:** ${status}
+**Location:** ${unit.location || '(none)'}
+**Note:** ${unit.note || '(none)'}
+**ID:** ${unit.id}`;
+      })
+      .join('\n\n');
+
+    const totalText = results.length > 50
+      ? `\n\n*Showing first 50 of ${results.length} units*`
+      : '';
+
+    return `Found ${results.length} units in ${projectSlug}/${componentSlug}/${languageCode} matching query "${searchQuery}":\n\n${formattedResults}${totalText}`;
   }
 } 

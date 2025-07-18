@@ -105,17 +105,25 @@ Once configured, you'll have access to these translation management tools:
 - **listProjects** - List all available Weblate projects
 - **listComponents** - List components in a specific project  
 - **listLanguages** - List languages available in a project
+- **searchUnitsWithFilters** ⭐ - **Efficient search using Weblate's native filtering syntax**
 - **searchStringInProject** - Search for translations containing specific text
 - **getTranslationForKey** - Get translation value for a specific key
 - **writeTranslation** - Write or update a translation value
-- **searchTranslationsByKey** - Search for translations by key pattern
 - **findTranslationsForKey** - Find all translations for a specific key
-- **listTranslationKeys** - List all translation keys in a project
-- **searchTranslationKeys** - Search for translation keys by pattern
 
 ## Usage Examples
 
-### Ask Claude to help with translations:
+### ⭐ Efficient Translation Search (Recommended)
+
+Use `searchUnitsWithFilters` for the most efficient queries:
+
+> "Find all untranslated strings in Slovak for the 'common' component using `searchUnitsWithFilters` with query `state:=0`"
+
+> "Show me strings that need editing in French for the 'frontend' component using `searchUnitsWithFilters` with query `state:=10`"
+
+> "Find all strings containing 'error' in the source text using `searchUnitsWithFilters` with query `source:\"error\"`"
+
+### General Translation Management
 
 > "List all projects in my Weblate instance"
 
@@ -125,7 +133,14 @@ Once configured, you'll have access to these translation management tools:
 
 > "Update the French translation for key 'welcome.message' to 'Bienvenue sur notre plateforme'"
 
-> "Search for all translation keys that contain 'error' in the 'api-messages' project"
+### 🚀 Why searchUnitsWithFilters is Better
+
+Instead of asking for "all translation keys" and then checking each one individually (which can make thousands of API calls), use efficient filtering:
+
+- **❌ Inefficient**: "List all keys, then check each one for translation status"
+- **✅ Efficient**: "Search for untranslated strings using `state:=0` filter"
+
+The `searchUnitsWithFilters` tool uses Weblate's native search capabilities for optimal performance.
 
 ## Troubleshooting
 

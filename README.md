@@ -12,6 +12,7 @@ A [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) server that p
 - **🌐 Language Support**: Work with all supported languages in your Weblate instance
 - **🚀 Multiple Transports**: HTTP/SSE, Streamable HTTP, and STDIO support
 - **🛡️ Type Safety**: Full TypeScript implementation with comprehensive error handling
+- **⚡ LLM-Optimized**: Tools designed to guide AI models toward efficient usage patterns
 
 ## 🎯 What is This?
 
@@ -143,13 +144,24 @@ For development or local builds:
 ### ✏️ Translation Management
 | Tool | Description |
 |------|-------------|
+| **`searchUnitsWithFilters`** ⭐ | **Efficient search using Weblate's native filtering syntax** |
 | **`searchStringInProject`** | Search for translations containing specific text in a project |
 | **`getTranslationForKey`** | Get translation value for a specific key |
 | **`writeTranslation`** | Update or write translation values with approval support |
-| **`searchTranslationsByKey`** | Search for translations by key pattern across components |
 | **`findTranslationsForKey`** | Find all translations for a specific key across languages |
-| **`listTranslationKeys`** | List all translation keys in a project (filterable by component) |
-| **`searchTranslationKeys`** | Search for translation keys by pattern in a project |
+
+#### 🚀 Why searchUnitsWithFilters is Recommended
+
+The `searchUnitsWithFilters` tool uses Weblate's native filtering syntax, making it the most efficient way to find translations:
+
+- **❌ Inefficient**: Getting all keys then checking each one individually (can make thousands of API calls)
+- **✅ Efficient**: Single filtered search using Weblate's query syntax
+
+**Example efficient queries:**
+- `state:=0` - Find untranslated strings
+- `state:=10` - Find strings that need editing  
+- `source:"login"` - Find strings containing "login"
+- `component:common AND state:=0` - Complex filters
 
 ### 🌐 Language Management
 | Tool | Description |

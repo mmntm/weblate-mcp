@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { WeblateClientService } from '../weblate-client.service';
-import { unitsList, unitsPartialUpdate, type Unit, type PaginatedUnitList } from '../../client';
+import { unitsList, unitsPartialUpdate, translationsUnitsRetrieve, type Unit, type PaginatedUnitList, type UnitsListData, type TranslationsUnitsRetrieveData } from '../../client';
 import { SearchIn } from '../../types';
 
 @Injectable()
@@ -19,11 +19,6 @@ export class WeblateTranslationsService {
   ): Promise<{ results: Unit[]; count: number; next?: string; previous?: string }> {
     try {
       const client = this.weblateClientService.getClient();
-      
-      // For now, let's try a direct API call with the raw client
-      // since the generated endpoints seem to be incomplete
-      let url = '/units/';
-      const params = new URLSearchParams();
       
       // Build search query
       const q_parts = [];
@@ -50,23 +45,28 @@ export class WeblateTranslationsService {
         q_parts.push(`language:${languageCode}`);
       }
 
+      // Use the generated SDK with extended types to include the missing 'q' parameter
+      const options: UnitsListData & { query?: { q?: string; page_size?: number } } = {
+        url: '/units/',
+        query: {
+          page_size: 1000,
+        },
+      };
+
       if (q_parts.length > 0) {
-        params.append('q', q_parts.join(' '));
+        options.query!.q = q_parts.join(' ');
       }
-      
-      params.append('page_size', '1000');
-      
-      if (params.toString()) {
-        url += '?' + params.toString();
-      }
-      
-      // Use the raw client to make the request
-      const response = await client.request({
-        url,
-        method: 'GET',
+
+      const response = await unitsList({
+        client,
+        ...options,
       });
       
-      const data = response.data as any;
+      if (response.error) {
+        throw new Error(`API error: ${JSON.stringify(response.error)}`);
+      }
+      
+      const data = response.data as PaginatedUnitList;
       
       return {
         results: data.results || [],
@@ -280,6 +280,57 @@ export class WeblateTranslationsService {
       );
       throw new Error(
         `Failed to search translation keys: ${error.message}`,
+      );
+    }
+  }
+
+  /**
+   * Search units with custom Weblate query filters
+   * This provides direct access to Weblate's powerful search capabilities
+   */
+  async searchUnitsWithQuery(
+    projectSlug: string,
+    componentSlug: string,
+    languageCode: string,
+    searchQuery: string,
+    limit: number = 50,
+  ): Promise<Unit[]> {
+    try {
+      const client = this.weblateClientService.getClient();
+      
+      // Build the complete search query by combining user query with scope filters
+      const queryParts = [searchQuery];
+      queryParts.push(`project:${projectSlug}`);
+      queryParts.push(`component:${componentSlug}`);
+      queryParts.push(`language:${languageCode}`);
+      
+      // Use the generated SDK with extended types to include the missing 'q' parameter
+      const options: UnitsListData & { query?: { q?: string; page_size?: number } } = {
+        url: '/units/',
+        query: {
+          q: queryParts.join(' AND '),
+          page_size: Math.min(limit, 1000),
+        },
+      };
+
+      const response = await unitsList({
+        client,
+        ...options,
+      });
+      
+      if (response.error) {
+        throw new Error(`API error: ${JSON.stringify(response.error)}`);
+      }
+      
+      const data = response.data as PaginatedUnitList;
+      return data.results || [];
+    } catch (error) {
+      this.logger.error(
+        `Failed to search units with query "${searchQuery}" in ${projectSlug}/${componentSlug}/${languageCode}`,
+        error,
+      );
+      throw new Error(
+        `Failed to search units: ${error.message}`,
       );
     }
   }

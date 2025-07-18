@@ -183,82 +183,157 @@ Create a new component in a project.
 
 ## Translation Management
 
-### `list_translations`
+### `searchUnitsWithFilters` ⭐ **Recommended**
 
-List all translations for a component.
+Search translation units using Weblate's powerful filtering syntax. This is the most efficient way to find translations by status, content, or other criteria.
 
 **Parameters:**
-- `project_slug` (string, required): Project slug identifier
-- `component_slug` (string, required): Component slug identifier
+- `projectSlug` (string, required): The slug of the project
+- `componentSlug` (string, required): The slug of the component  
+- `languageCode` (string, required): The language code (e.g., "sk", "cs", "fr")
+- `searchQuery` (string, required): Weblate search query using their filter syntax
+- `limit` (number, optional): Maximum number of results to return (default: 50, max: 200)
+
+**Supported Search Queries:**
+- `state:=0` - Find untranslated strings
+- `state:=10` - Find strings that need editing
+- `state:>=20` - Find translated/approved strings
+- `source:"login"` - Find strings containing "login" in source text
+- `target:"bonjour"` - Find strings containing "bonjour" in target text
+- `has:suggestion` - Find strings with suggestions
+- `component:common AND state:=0` - Complex queries with multiple filters
 
 **Returns:**
 ```typescript
 {
-  results: Translation[];
+  results: Unit[];
   count: number;
-  next?: string;
-  previous?: string;
+  formattedText: string; // Human-readable formatted results
 }
 ```
 
 **Example:**
 ```json
 {
-  "name": "list_translations",
+  "name": "searchUnitsWithFilters",
   "arguments": {
-    "project_slug": "myproject",
-    "component_slug": "frontend"
+    "projectSlug": "myproject",
+    "componentSlug": "frontend", 
+    "languageCode": "fr",
+    "searchQuery": "state:=0",
+    "limit": 20
   }
 }
 ```
 
-### `get_translation`
+### `searchStringInProject`
 
-Get detailed information about a specific translation.
+Search for translations containing specific text across a project.
 
 **Parameters:**
-- `project_slug` (string, required): Project slug identifier
-- `component_slug` (string, required): Component slug identifier
-- `language_code` (string, required): Language code (e.g., "en", "fr", "de")
+- `projectSlug` (string, required): The slug of the project to search in
+- `value` (string, required): The text to search for
+- `searchIn` (enum, optional): Where to search - "source", "target", or "both" (default: "both")
 
-**Returns:** `Translation`
+**Returns:**
+```typescript
+{
+  results: Unit[];
+  count: number;
+  formattedText: string;
+}
+```
 
 **Example:**
 ```json
 {
-  "name": "get_translation",
+  "name": "searchStringInProject", 
   "arguments": {
-    "project_slug": "myproject",
-    "component_slug": "frontend",
-    "language_code": "fr"
+    "projectSlug": "myproject",
+    "value": "login",
+    "searchIn": "both"
   }
 }
 ```
 
-### `update_translation`
+### `getTranslationForKey`
 
-Update translation strings for a specific translation.
+Get translation value for a specific key in a project.
 
 **Parameters:**
-- `project_slug` (string, required): Project slug identifier
-- `component_slug` (string, required): Component slug identifier
-- `language_code` (string, required): Language code
-- `translations` (object, required): Key-value pairs of translation strings
+- `projectSlug` (string, required): The slug of the project
+- `componentSlug` (string, required): The slug of the component
+- `languageCode` (string, required): The language code (e.g., "en", "es", "fr")
+- `key` (string, required): The translation key to look up
 
-**Returns:** `Translation`
+**Returns:** `Unit`
 
 **Example:**
 ```json
 {
-  "name": "update_translation",
+  "name": "getTranslationForKey",
   "arguments": {
-    "project_slug": "myproject",
-    "component_slug": "frontend",
-    "language_code": "fr",
-    "translations": {
-      "hello": "Bonjour",
-      "goodbye": "Au revoir"
-    }
+    "projectSlug": "myproject",
+    "componentSlug": "frontend",
+    "languageCode": "fr", 
+    "key": "welcome.message"
+  }
+}
+```
+
+### `writeTranslation`
+
+Update or write a translation value for a specific key.
+
+**Parameters:**
+- `projectSlug` (string, required): The slug of the project
+- `componentSlug` (string, required): The slug of the component
+- `languageCode` (string, required): The language code (e.g., "en", "es", "fr")
+- `key` (string, required): The translation key to update
+- `value` (string, required): The new translation value
+- `markAsApproved` (boolean, optional): Whether to mark as approved (default: false)
+
+**Returns:** `Unit`
+
+**Example:**
+```json
+{
+  "name": "writeTranslation",
+  "arguments": {
+    "projectSlug": "myproject",
+    "componentSlug": "frontend",
+    "languageCode": "fr",
+    "key": "welcome.message",
+    "value": "Bienvenue sur notre plateforme",
+    "markAsApproved": true
+  }
+}
+```
+
+### `findTranslationsForKey`
+
+Find all translations for a specific key across all components and languages in a project.
+
+**Parameters:**
+- `projectSlug` (string, required): The slug of the project
+- `key` (string, required): The exact translation key to find
+
+**Returns:**
+```typescript
+{
+  results: Unit[];
+  groupedByComponent: Record<string, Unit[]>;
+  formattedText: string;
+}
+```
+
+**Example:**
+```json
+{
+  "name": "findTranslationsForKey",
+  "arguments": {
+    "projectSlug": "myproject",
+    "key": "welcome.message"
   }
 }
 ```

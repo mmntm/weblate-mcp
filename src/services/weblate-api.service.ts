@@ -168,4 +168,20 @@ export class WeblateApiService {
   async getChangesByUser(user: string, limit: number = 50) {
     return this.changesService.getChangesByUser(user, limit);
   }
+
+  async searchUnitsWithQuery(
+    projectSlug: string,
+    componentSlug: string,
+    languageCode: string,
+    searchQuery: string,
+    limit: number = 50,
+  ): Promise<Unit[]> {
+    return this.translationsService.searchUnitsWithQuery(
+      projectSlug,
+      componentSlug,
+      languageCode,
+      searchQuery,
+      limit,
+    );
+  }
 }
