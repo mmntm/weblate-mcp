@@ -6,7 +6,7 @@ import { AppModule } from './app.module';
 async function bootstrap() {
   // Create application context for STDIO transport (no HTTP server needed)
   const app = await NestFactory.createApplicationContext(AppModule, {
-    logger: false, // Disable all logging for MCP STDIO compatibility
+    logger: process.env.NODE_ENV === 'production' ? false : ['error', 'warn', 'log'], // Disable all logging for MCP STDIO compatibility
   });
   
   // Keep the application running to handle MCP STDIO communication

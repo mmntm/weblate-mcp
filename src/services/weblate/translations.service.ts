@@ -1,17 +1,13 @@
-import { Injectable } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import { BaseWeblateService } from './base-weblate.service';
-import { 
-  WeblateTranslation, 
-  WeblateSearchResult, 
-  SearchIn 
-} from '../../types';
+import { Injectable, Logger } from '@nestjs/common';
+import { WeblateClientService } from '../weblate-client.service';
+import { unitsList, unitsPartialUpdate, type Unit, type PaginatedUnitList } from '../../client';
+import { SearchIn } from '../../types';
 
 @Injectable()
-export class WeblateTranslationsService extends BaseWeblateService {
-  constructor(configService: ConfigService) {
-    super(configService);
-  }
+export class WeblateTranslationsService {
+  private readonly logger = new Logger(WeblateTranslationsService.name);
+
+  constructor(private weblateClientService: WeblateClientService) {}
 
   async searchTranslations(
     projectSlug: string,
@@ -20,10 +16,16 @@ export class WeblateTranslationsService extends BaseWeblateService {
     query?: string,
     source?: string,
     target?: string,
-  ): Promise<WeblateSearchResult> {
+  ): Promise<{ results: Unit[]; count: number; next?: string; previous?: string }> {
     try {
+      const client = this.weblateClientService.getClient();
+      
+      // For now, let's try a direct API call with the raw client
+      // since the generated endpoints seem to be incomplete
+      let url = '/units/';
       const params = new URLSearchParams();
-
+      
+      // Build search query
       const q_parts = [];
       if (query) {
         q_parts.push(query);
@@ -34,36 +36,49 @@ export class WeblateTranslationsService extends BaseWeblateService {
       if (target) {
         q_parts.push(`target:"${target}"`);
       }
+      
+      // Add project filter
+      q_parts.push(`project:${projectSlug}`);
+      
+      // Add component filter if specified
+      if (componentSlug) {
+        q_parts.push(`component:${componentSlug}`);
+      }
+      
+      // Add language filter if specified
+      if (languageCode) {
+        q_parts.push(`language:${languageCode}`);
+      }
 
       if (q_parts.length > 0) {
         params.append('q', q_parts.join(' '));
       }
-
-      let endpoint: string;
-      if (componentSlug && languageCode) {
-        endpoint = `/projects/${projectSlug}/components/${componentSlug}/translations/${languageCode}/units/`;
-      } else if (componentSlug) {
-        // Search across all languages in a component
-        endpoint = `/projects/${projectSlug}/components/${componentSlug}/units/`;
-      } else {
-        // Search across all components in a project
-        endpoint = `/units/`;
-        params.append('project', projectSlug);
-      }
-
-      const response = await this.apiClient.get(endpoint, { params });
       
-      return response.data;
+      params.append('page_size', '1000');
+      
+      if (params.toString()) {
+        url += '?' + params.toString();
+      }
+      
+      // Use the raw client to make the request
+      const response = await client.request({
+        url,
+        method: 'GET',
+      });
+      
+      const data = response.data as any;
+      
+      return {
+        results: data.results || [],
+        count: data.count || 0,
+        next: data.next || undefined,
+        previous: data.previous || undefined,
+      };
     } catch (error) {
       this.logger.error(
         `Failed to search translations: ${error.message}`,
         error.stack,
       );
-      if (error.response) {
-        this.logger.error(
-          `Weblate API error: ${error.response.status} ${JSON.stringify(error.response.data)}`,
-        );
-      }
       throw new Error(`Failed to search translations: ${error.message}`);
     }
   }
@@ -73,7 +88,7 @@ export class WeblateTranslationsService extends BaseWeblateService {
     componentSlug: string,
     languageCode: string,
     key: string,
-  ): Promise<WeblateTranslation | null> {
+  ): Promise<Unit | null> {
     try {
       const searchResult = await this.searchTranslations(
         projectSlug,
@@ -95,23 +110,23 @@ export class WeblateTranslationsService extends BaseWeblateService {
     projectSlug: string,
     searchValue: string,
     searchIn: SearchIn = 'both',
-  ): Promise<WeblateTranslation[]> {
+  ): Promise<Unit[]> {
     try {
-      let results: WeblateTranslation[] = [];
+      let results: Unit[] = [];
 
       if (searchIn === 'source' || searchIn === 'both') {
-        const sourceResult = await this.searchTranslations(
+        const sourceResults = await this.searchTranslations(
           projectSlug,
           undefined,
           undefined,
           undefined,
           searchValue,
         );
-        results.push(...sourceResult.results);
+        results = results.concat(sourceResults.results);
       }
 
       if (searchIn === 'target' || searchIn === 'both') {
-        const targetResult = await this.searchTranslations(
+        const targetResults = await this.searchTranslations(
           projectSlug,
           undefined,
           undefined,
@@ -119,71 +134,24 @@ export class WeblateTranslationsService extends BaseWeblateService {
           undefined,
           searchValue,
         );
-        results.push(...targetResult.results);
+        results = results.concat(targetResults.results);
       }
 
-      // Deduplicate results by id
-      const uniqueResults = results.reduce((acc, current) => {
-        if (!acc.find((item) => item.id === current.id)) {
-          acc.push(current);
-        }
-        return acc;
-      }, []);
+      // Remove duplicates based on unit ID
+      const uniqueResults = results.filter(
+        (unit, index, self) => 
+          index === self.findIndex(u => u.id === unit.id)
+      );
 
       return uniqueResults;
     } catch (error) {
       this.logger.error(
-        `Failed to search string "${searchValue}" in project ${projectSlug}`,
+        `Failed to search string in project ${projectSlug}`,
         error,
       );
-      throw new Error(`Failed to search string: ${error.message}`);
-    }
-  }
-
-  async findBestTranslationMatch(
-    projectSlug: string,
-    searchValue: string,
-    context?: string,
-  ): Promise<WeblateTranslation[]> {
-    try {
-      // First, try to find exact matches in source text
-      let results = await this.searchStringInProject(
-        projectSlug,
-        searchValue,
-        'source',
+      throw new Error(
+        `Failed to search string in project: ${error.message}`,
       );
-
-      if (results.length === 0) {
-        // If no exact match, try fuzzy search
-        results = await this.searchStringInProject(
-          projectSlug,
-          searchValue,
-          'both',
-        );
-      }
-
-      // If context is provided, try to filter results by context
-      if (context && results.length > 1) {
-        const contextWords = context.toLowerCase().split(/\s+/);
-        results = results.filter((translation) => {
-          const translationContext = (
-            translation.context +
-            ' ' +
-            translation.source.join('') +
-            ' ' +
-            translation.note
-          ).toLowerCase();
-          return contextWords.some((word) => translationContext.includes(word));
-        });
-      }
-
-      return results;
-    } catch (error) {
-      this.logger.error(
-        `Failed to find best translation match for "${searchValue}"`,
-        error,
-      );
-      throw new Error(`Failed to find translation match: ${error.message}`);
     }
   }
 
@@ -194,106 +162,54 @@ export class WeblateTranslationsService extends BaseWeblateService {
     key: string,
     value: string,
     markAsApproved: boolean = false,
-  ): Promise<WeblateTranslation> {
+  ): Promise<Unit | null> {
     try {
-      // First, find all translations for this key across all components
-      const allTranslations = await this.findTranslationsForKey(
-        projectSlug,
-        key,
-      );
-
-      if (allTranslations.length === 0) {
-        throw new Error(
-          `Translation not found for key "${key}" in project ${projectSlug}`,
-        );
-      }
-
-      // Find the specific translation for the target language
-      const targetTranslation = allTranslations.find(
-        t => t.language_code === languageCode
-      );
-
-      if (!targetTranslation) {
-        throw new Error(
-          `Translation not found for key "${key}" in language ${languageCode} in project ${projectSlug}`,
-        );
-      }
-
-      // Update the translation
-      const updateData: any = {
-        target: [value],
-        state: markAsApproved ? 20 : 10, // 20 = approved, 10 = translated
-      };
-
-      const response = await this.apiClient.patch(
-        `/units/${targetTranslation.id}/`,
-        updateData,
-      );
-
-      return response.data;
-    } catch (error) {
-      this.logger.error(`Failed to write translation for key ${key}`, error);
-      if (error.response) {
-        this.logger.error(
-          `Weblate API error: ${error.response.status} ${JSON.stringify(error.response.data)}`,
-        );
-      }
-      throw new Error(
-        `Failed to write translation for key "${key}": ${error.message}`,
-      );
-    }
-  }
-
-  /**
-   * Search for translations by key pattern across all components in a project
-   */
-  async searchTranslationsByKey(
-    projectSlug: string,
-    keyPattern: string,
-    componentSlug?: string,
-    languageCode?: string,
-    exactMatch: boolean = false,
-  ): Promise<WeblateTranslation[]> {
-    try {
-      const searchQuery = exactMatch 
-        ? `context:"${keyPattern}"` 
-        : `context:${keyPattern}`;
-
-      const searchResult = await this.searchTranslations(
+      // First, find the translation unit by key
+      const unit = await this.getTranslationByKey(
         projectSlug,
         componentSlug,
         languageCode,
-        searchQuery,
+        key,
       );
 
-      return searchResult.results;
+      if (!unit || !unit.id) {
+        throw new Error(`Translation unit not found for key "${key}"`);
+      }
+
+      const client = this.weblateClientService.getClient();
+      
+      // Update the translation using the units API
+      const response = await unitsPartialUpdate({
+        client,
+        path: { id: unit.id.toString() },
+        body: {
+          target: [value], // Weblate expects array of strings
+          state: markAsApproved ? 30 : 20, // 30 = approved, 20 = translated
+        },
+      });
+
+      return response.data as Unit;
     } catch (error) {
-      this.logger.error(
-        `Failed to search translations by key pattern "${keyPattern}" in project ${projectSlug}`,
-        error,
-      );
+      this.logger.error(`Failed to write translation for key ${key}`, error);
       throw new Error(
-        `Failed to search translations by key: ${error.message}`,
+        `Failed to write translation for key ${key}: ${error.message}`,
       );
     }
   }
 
-  /**
-   * Find all translations for a specific key across all components and languages in a project
-   */
   async findTranslationsForKey(
     projectSlug: string,
     key: string,
-  ): Promise<WeblateTranslation[]> {
+    componentSlug?: string,
+  ): Promise<Unit[]> {
     try {
-      // Search for exact key match across all components and languages
       const searchResult = await this.searchTranslations(
         projectSlug,
-        undefined,
+        componentSlug,
         undefined,
         `context:"${key}"`,
       );
-      
+
       return searchResult.results;
     } catch (error) {
       this.logger.error(

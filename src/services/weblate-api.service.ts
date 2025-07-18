@@ -4,15 +4,16 @@ import {
   WeblateComponentsService,
   WeblateLanguagesService,
   WeblateTranslationsService,
+  WeblateChangesService,
 } from './weblate';
 import {
-  WeblateProject,
-  WeblateComponent,
-  WeblateLanguage,
-  WeblateTranslation,
-  WeblateSearchResult,
-  SearchIn,
-} from '../types';
+  type Project,
+  type Component,
+  type Language,
+  type Unit,
+  type Change,
+} from '../client';
+import { SearchIn } from '../types';
 
 @Injectable()
 export class WeblateApiService {
@@ -21,24 +22,25 @@ export class WeblateApiService {
     private readonly componentsService: WeblateComponentsService,
     private readonly languagesService: WeblateLanguagesService,
     private readonly translationsService: WeblateTranslationsService,
+    private readonly changesService: WeblateChangesService,
   ) {}
 
   // Project methods
-  async listProjects(): Promise<WeblateProject[]> {
+  async listProjects(): Promise<Project[]> {
     return this.projectsService.listProjects();
   }
 
-  async getProject(projectSlug: string): Promise<WeblateProject> {
+  async getProject(projectSlug: string): Promise<Project> {
     return this.projectsService.getProject(projectSlug);
   }
 
   // Component methods
-  async listComponents(projectSlug: string): Promise<WeblateComponent[]> {
+  async listComponents(projectSlug: string): Promise<Component[]> {
     return this.componentsService.listComponents(projectSlug);
   }
 
   // Language methods
-  async listLanguages(projectSlug: string): Promise<WeblateLanguage[]> {
+  async listLanguages(projectSlug: string): Promise<Language[]> {
     return this.languagesService.listLanguages(projectSlug);
   }
 
@@ -50,7 +52,7 @@ export class WeblateApiService {
     query?: string,
     source?: string,
     target?: string,
-  ): Promise<WeblateSearchResult> {
+  ): Promise<{ results: Unit[]; count: number; next?: string; previous?: string }> {
     return this.translationsService.searchTranslations(
       projectSlug,
       componentSlug,
@@ -66,7 +68,7 @@ export class WeblateApiService {
     componentSlug: string,
     languageCode: string,
     key: string,
-  ): Promise<WeblateTranslation | null> {
+  ): Promise<Unit | null> {
     return this.translationsService.getTranslationByKey(
       projectSlug,
       componentSlug,
@@ -79,23 +81,11 @@ export class WeblateApiService {
     projectSlug: string,
     searchValue: string,
     searchIn: SearchIn = 'both',
-  ): Promise<WeblateTranslation[]> {
+  ): Promise<Unit[]> {
     return this.translationsService.searchStringInProject(
       projectSlug,
       searchValue,
       searchIn,
-    );
-  }
-
-  async findBestTranslationMatch(
-    projectSlug: string,
-    searchValue: string,
-    context?: string,
-  ): Promise<WeblateTranslation[]> {
-    return this.translationsService.findBestTranslationMatch(
-      projectSlug,
-      searchValue,
-      context,
     );
   }
 
@@ -106,7 +96,7 @@ export class WeblateApiService {
     key: string,
     value: string,
     markAsApproved: boolean = false,
-  ): Promise<WeblateTranslation> {
+  ): Promise<Unit | null> {
     return this.translationsService.writeTranslation(
       projectSlug,
       componentSlug,
@@ -117,27 +107,28 @@ export class WeblateApiService {
     );
   }
 
-  async searchTranslationsByKey(
+  async searchTranslationKeys(
     projectSlug: string,
     keyPattern: string,
     componentSlug?: string,
-    languageCode?: string,
-    exactMatch: boolean = false,
-  ): Promise<WeblateTranslation[]> {
-    return this.translationsService.searchTranslationsByKey(
+  ): Promise<string[]> {
+    return this.translationsService.searchTranslationKeys(
       projectSlug,
       keyPattern,
       componentSlug,
-      languageCode,
-      exactMatch,
     );
   }
 
   async findTranslationsForKey(
     projectSlug: string,
     key: string,
-  ): Promise<WeblateTranslation[]> {
-    return this.translationsService.findTranslationsForKey(projectSlug, key);
+    componentSlug?: string,
+  ): Promise<Unit[]> {
+    return this.translationsService.findTranslationsForKey(
+      projectSlug,
+      key,
+      componentSlug,
+    );
   }
 
   async listTranslationKeys(
@@ -152,15 +143,29 @@ export class WeblateApiService {
     );
   }
 
-  async searchTranslationKeys(
-    projectSlug: string,
-    keyPattern: string,
-    componentSlug?: string,
-  ): Promise<string[]> {
-    return this.translationsService.searchTranslationKeys(
-      projectSlug,
-      keyPattern,
-      componentSlug,
-    );
+  // Change tracking methods
+  async listRecentChanges(
+    limit: number = 50,
+    user?: string,
+    timestampAfter?: string,
+    timestampBefore?: string,
+  ): Promise<{ results: Change[]; count: number; next?: string; previous?: string }> {
+    return this.changesService.listRecentChanges(limit, user, timestampAfter, timestampBefore);
+  }
+
+  async getProjectChanges(projectSlug: string) {
+    return this.changesService.getProjectChanges(projectSlug);
+  }
+
+  async getComponentChanges(projectSlug: string, componentSlug: string) {
+    return this.changesService.getComponentChanges(projectSlug, componentSlug);
+  }
+
+  async getChangesByAction(actionCodes: number[], limit: number = 50) {
+    return this.changesService.getChangesByAction(actionCodes, limit);
+  }
+
+  async getChangesByUser(user: string, limit: number = 50) {
+    return this.changesService.getChangesByUser(user, limit);
   }
 }

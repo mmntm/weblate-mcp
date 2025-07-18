@@ -1,26 +1,29 @@
-import { Injectable } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import { BaseWeblateService } from './base-weblate.service';
-import { WeblateProject } from '../../types';
+import { Injectable, Logger } from '@nestjs/common';
+import { WeblateClientService } from '../weblate-client.service';
+import { projectsList, projectsRetrieve, type Project } from '../../client';
 
 @Injectable()
-export class WeblateProjectsService extends BaseWeblateService {
-  constructor(configService: ConfigService) {
-    super(configService);
-  }
+export class WeblateProjectsService {
+  private readonly logger = new Logger(WeblateProjectsService.name);
 
-  async listProjects(): Promise<WeblateProject[]> {
+  constructor(private weblateClientService: WeblateClientService) {}
+
+  async listProjects(): Promise<Project[]> {
     try {
-      const response = await this.apiClient.get('/projects/');
+      const client = this.weblateClientService.getClient();
+      const response = await projectsList({ client });
+
+      // The generated client returns the response with data field
+      const projects = response.data;
 
       // Check if response.data is an array directly (some APIs return array directly)
-      if (Array.isArray(response.data)) {
-        return response.data;
+      if (Array.isArray(projects)) {
+        return projects;
       }
 
       // Check if response.data.results exists (paginated response)
-      if (response.data.results && Array.isArray(response.data.results)) {
-        return response.data.results;
+      if (projects && Array.isArray(projects.results)) {
+        return projects.results;
       }
 
       return [];
@@ -30,9 +33,13 @@ export class WeblateProjectsService extends BaseWeblateService {
     }
   }
 
-  async getProject(projectSlug: string): Promise<WeblateProject> {
+  async getProject(projectSlug: string): Promise<Project> {
     try {
-      const response = await this.apiClient.get(`/projects/${projectSlug}/`);
+      const client = this.weblateClientService.getClient();
+      const response = await projectsRetrieve({ 
+        client,
+        path: { slug: projectSlug }
+      });
       return response.data;
     } catch (error) {
       this.logger.error(`Failed to get project ${projectSlug}`, error);

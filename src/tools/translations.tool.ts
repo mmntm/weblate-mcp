@@ -2,123 +2,13 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Tool } from '@rekog/mcp-nest';
 import { z } from 'zod';
 import { WeblateApiService } from '../services';
-import { WeblateTranslation } from '../types';
+import { type Unit } from '../client';
 
 @Injectable()
-export class WeblateTranslationTool {
-  private readonly logger = new Logger(WeblateTranslationTool.name);
+export class WeblateTranslationsTool {
+  private readonly logger = new Logger(WeblateTranslationsTool.name);
 
   constructor(private weblateApiService: WeblateApiService) {}
-
-  @Tool({
-    name: 'listProjects',
-    description: 'List all available Weblate projects',
-    parameters: z.object({}),
-  })
-  async listProjects() {
-    try {
-      const projects = await this.weblateApiService.listProjects();
-
-      return {
-        content: [
-          {
-            type: 'text',
-            text: `Found ${projects.length} projects:\n\n${projects
-              .map((p) => `- **${p.name}** (${p.slug})\n  URL: ${p.web_url}`)
-              .join('\n\n')}`,
-          },
-        ],
-      };
-    } catch (error) {
-      this.logger.error('Failed to list projects', error);
-      return {
-        content: [
-          {
-            type: 'text',
-            text: `Error listing projects: ${error.message}`,
-          },
-        ],
-        isError: true,
-      };
-    }
-  }
-
-  @Tool({
-    name: 'listComponents',
-    description: 'List components in a specific project',
-    parameters: z.object({
-      projectSlug: z.string().describe('The slug of the project'),
-    }),
-  })
-  async listComponents({ projectSlug }: { projectSlug: string }) {
-    try {
-      const components =
-        await this.weblateApiService.listComponents(projectSlug);
-
-      return {
-        content: [
-          {
-            type: 'text',
-            text: `Components in project "${projectSlug}":\n\n${components
-              .map(
-                (c) =>
-                  `- **${c.name}** (${c.slug})\n  Source Language: ${c.source_language.name} (${c.source_language.code})`,
-              )
-              .join('\n\n')}`,
-          },
-        ],
-      };
-    } catch (error) {
-      this.logger.error(`Failed to list components for ${projectSlug}`, error);
-      return {
-        content: [
-          {
-            type: 'text',
-            text: `Error listing components for project "${projectSlug}": ${error.message}`,
-          },
-        ],
-        isError: true,
-      };
-    }
-  }
-
-  @Tool({
-    name: 'listLanguages',
-    description: 'List languages available in a specific project',
-    parameters: z.object({
-      projectSlug: z.string().describe('The slug of the project'),
-    }),
-  })
-  async listLanguages({ projectSlug }: { projectSlug: string }) {
-    try {
-      const languages = await this.weblateApiService.listLanguages(projectSlug);
-
-      return {
-        content: [
-          {
-            type: 'text',
-            text: `Languages in project "${projectSlug}":\n\n${languages
-              .map(
-                (l) =>
-                  `- **${l.name}** (${l.code}) - ${l.translated_percent.toFixed(1)}% translated`,
-              )
-              .join('\n')}`,
-          },
-        ],
-      };
-    } catch (error) {
-      this.logger.error(`Failed to list languages for ${projectSlug}`, error);
-      return {
-        content: [
-          {
-            type: 'text',
-            text: `Error listing languages for project "${projectSlug}": ${error.message}`,
-          },
-        ],
-        isError: true,
-      };
-    }
-  }
 
   @Tool({
     name: 'searchStringInProject',
@@ -289,7 +179,7 @@ export class WeblateTranslationTool {
     markAsApproved?: boolean;
   }) {
     try {
-      const updatedTranslation = await this.weblateApiService.writeTranslation(
+      const updatedUnit = await this.weblateApiService.writeTranslation(
         projectSlug,
         componentSlug,
         languageCode,
@@ -302,7 +192,9 @@ export class WeblateTranslationTool {
         content: [
           {
             type: 'text',
-            text: `Successfully updated translation:\n\n${this.formatTranslationResult(updatedTranslation)}`,
+            text: updatedUnit 
+              ? `Successfully updated translation for key "${key}"\n\n${this.formatTranslationResult(updatedUnit)}`
+              : `Failed to update translation for key "${key}"`,
           },
         ],
       };
@@ -345,12 +237,10 @@ export class WeblateTranslationTool {
     exactMatch?: boolean;
   }) {
     try {
-      const results = await this.weblateApiService.searchTranslationsByKey(
+      const results = await this.weblateApiService.searchTranslationKeys(
         projectSlug,
         keyPattern,
         componentSlug,
-        languageCode,
-        exactMatch,
       );
 
       if (results.length === 0) {
@@ -365,19 +255,19 @@ export class WeblateTranslationTool {
       }
 
       const formattedResults = results
-        .slice(0, 10)
-        .map(this.formatTranslationResult)
-        .join('\n\n');
+        .slice(0, 50)
+        .map(key => `- ${key}`)
+        .join('\n');
       const totalText =
-        results.length > 10
-          ? `\n\n*Showing first 10 of ${results.length} results*`
+        results.length > 50
+          ? `\n\n*Showing first 50 of ${results.length} keys*`
           : '';
 
       return {
         content: [
           {
             type: 'text',
-            text: `Found ${results.length} translations for key pattern "${keyPattern}" in project "${projectSlug}":\n\n${formattedResults}${totalText}`,
+            text: `Found ${results.length} translation keys matching pattern "${keyPattern}" in project "${projectSlug}":\n\n${formattedResults}${totalText}`,
           },
         ],
       };
@@ -431,9 +321,9 @@ export class WeblateTranslationTool {
       }
 
       // Group by component and language for better readability
-      const groupedResults = results.reduce((acc: Record<string, WeblateTranslation[]>, translation) => {
-        const component = translation.translation.split('/')[2] || 'unknown';
-        const language = translation.language_code;
+      const groupedResults = results.reduce((acc: Record<string, Unit[]>, translation) => {
+        const component = translation.web_url?.split('/')[4] || 'unknown';
+        const language = translation.web_url?.split('/')[6] || 'unknown';
         const groupKey = `${component}/${language}`;
         
         if (!acc[groupKey]) {
@@ -608,7 +498,7 @@ export class WeblateTranslationTool {
     }
   }
 
-  private formatTranslationResult(translation: WeblateTranslation): string {
+  private formatTranslationResult(translation: Unit): string {
     const status = translation.approved
       ? '✅ Approved'
       : translation.translated
@@ -631,4 +521,4 @@ export class WeblateTranslationTool {
 **Note:** ${translation.note || '(none)'}
 **ID:** ${translation.id}`;
   }
-}
+} 
