@@ -133,29 +133,47 @@ For development or local builds:
 ### 📊 Project Management
 | Tool | Description |
 |------|-------------|
-| **`list_projects`** | List all projects in your Weblate instance |
-| **`get_project`** | Get detailed information about a specific project |
-| **`create_project`** | Create a new translation project |
+| **`listProjects`** | List all available Weblate projects with URLs and metadata |
 
 ### 🔧 Component Management
 | Tool | Description |
 |------|-------------|
-| **`list_components`** | List all components in a project |
-| **`get_component`** | Get detailed information about a component |
-| **`create_component`** | Create a new translation component |
+| **`listComponents`** | List components in a specific project with source language details |
 
 ### ✏️ Translation Management
 | Tool | Description |
 |------|-------------|
-| **`list_translations`** | List all translations for a component |
-| **`get_translation`** | Get detailed information about a translation |
-| **`update_translation`** | Update translation strings |
+| **`searchStringInProject`** | Search for translations containing specific text in a project |
+| **`getTranslationForKey`** | Get translation value for a specific key |
+| **`writeTranslation`** | Update or write translation values with approval support |
+| **`searchTranslationsByKey`** | Search for translations by key pattern across components |
+| **`findTranslationsForKey`** | Find all translations for a specific key across languages |
+| **`listTranslationKeys`** | List all translation keys in a project (filterable by component) |
+| **`searchTranslationKeys`** | Search for translation keys by pattern in a project |
 
 ### 🌐 Language Management
 | Tool | Description |
 |------|-------------|
-| **`list_languages`** | List all available languages |
-| **`get_language`** | Get detailed information about a language |
+| **`listLanguages`** | List languages available in a specific project |
+
+### 📊 Translation Statistics Dashboard
+| Tool | Description |
+|------|-------------|
+| **`getProjectStatistics`** | Comprehensive project statistics with completion rates and string counts |
+| **`getComponentStatistics`** | Detailed statistics for a specific component |
+| **`getProjectDashboard`** | Complete dashboard overview with all component statistics |
+| **`getTranslationStatistics`** | Statistics for specific translation (project/component/language) |
+| **`getComponentLanguageProgress`** | Translation progress for all languages in a component with progress bars |
+| **`getLanguageStatistics`** | Statistics for a language across all projects |
+| **`getUserStatistics`** | User contribution statistics and activity metrics |
+
+### 📈 Change Tracking & History
+| Tool | Description |
+|------|-------------|
+| **`listRecentChanges`** | Recent changes across all projects with user and timestamp filtering |
+| **`getProjectChanges`** | Recent changes for a specific project |
+| **`getComponentChanges`** | Recent changes for a specific component |
+| **`getChangesByUser`** | Recent changes by a specific user |
 
 ## 💡 Usage Examples
 

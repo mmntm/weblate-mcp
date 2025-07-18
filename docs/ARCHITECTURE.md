@@ -33,20 +33,26 @@ src/
 ├── app.module.ts             # Root NestJS module
 ├── services/                 # Business logic layer
 │   ├── index.ts             # Service exports
-│   └── weblate/             # Weblate API services
-│       ├── index.ts         # Weblate service exports
-│       ├── base-weblate.service.ts      # Base HTTP client
+│   ├── weblate-client.service.ts        # Generated OpenAPI client wrapper
+│   ├── weblate-api.service.ts           # Main service facade
+│   └── weblate/             # Specialized Weblate services
+│       ├── index.ts                     # Weblate service exports
+│       ├── base-weblate.service.ts      # Base HTTP client (legacy)
 │       ├── projects.service.ts          # Project operations
 │       ├── components.service.ts        # Component operations
 │       ├── translations.service.ts      # Translation operations
 │       ├── languages.service.ts         # Language operations
-│       └── weblate-api.service.ts       # Main service facade
+│       ├── changes.service.ts           # Change tracking & history
+│       └── statistics.service.ts        # Translation statistics & analytics
 ├── tools/                    # MCP tool implementations
 │   ├── index.ts             # Tool exports
-│   ├── project-tools.ts     # Project management tools
-│   ├── component-tools.ts   # Component management tools
-│   ├── translation-tools.ts # Translation management tools
-│   └── language-tools.ts    # Language management tools
+│   ├── projects.tool.ts     # Project management tools
+│   ├── components.tool.ts   # Component management tools
+│   ├── languages.tool.ts    # Language management tools
+│   ├── translations.tool.ts # Translation management tools
+│   ├── changes.tool.ts      # Change tracking tools
+│   ├── statistics.tool.ts   # Statistics dashboard tools
+│   └── debug.tool.ts        # Development and debugging tools
 └── types/                   # TypeScript definitions
     ├── index.ts            # Type exports
     └── weblate.types.ts    # Weblate API types
@@ -107,6 +113,47 @@ NestJS dependency injection container manages service lifecycles and dependencie
 })
 export class AppModule {}
 ```
+
+## ✨ Key Features & Capabilities
+
+### 📊 Translation Statistics Dashboard
+The statistics system provides comprehensive analytics and insights:
+
+- **Project-level statistics**: Overall completion rates, string counts, and progress metrics
+- **Component-level analytics**: Detailed statistics for individual translation components
+- **Language progress tracking**: Multi-language progress visualization with progress bars
+- **User contribution metrics**: Individual contributor statistics and activity tracking
+- **Cross-project language analytics**: Language performance across all projects
+- **Dashboard overview**: Comprehensive project dashboard with all component breakdowns
+
+Implementation leverages the generated OpenAPI client for robust API integration with proper error handling and data validation.
+
+### 📈 Change Tracking & History
+Advanced change monitoring and audit capabilities:
+
+- **Real-time change tracking**: Monitor all translation changes across projects
+- **User activity monitoring**: Track individual contributor activity and changes
+- **Project/component-specific history**: Focused change logs for specific areas
+- **Temporal filtering**: Filter changes by timestamp ranges and users
+- **Action categorization**: 52+ mapped action types (translations, approvals, commits, etc.)
+
+### 🔧 Enhanced Translation Management
+Comprehensive translation workflow support:
+
+- **Advanced search capabilities**: Search by content, keys, and patterns
+- **Bulk operations**: List and manage translation keys efficiently
+- **Write operations**: Update translations with approval workflow support
+- **Cross-component discovery**: Find translations across multiple components
+- **Pattern matching**: Flexible key and content search with regex support
+
+### 🏗️ Robust Architecture
+Modern, scalable design principles:
+
+- **Generated OpenAPI client**: Type-safe API integration with automatic client generation
+- **Modular tool architecture**: Separated tools by functionality for maintainability
+- **Dependency injection**: Proper service composition and lifecycle management
+- **Error resilience**: Comprehensive error handling with graceful degradation
+- **Service separation**: Specialized services for different functional domains
 
 ## 🔧 Core Components
 

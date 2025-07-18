@@ -65,23 +65,39 @@ Add to your Claude Desktop configuration:
 The MCP server provides comprehensive tools for interacting with Weblate:
 
 ### Project Management
-- `list_projects` - List all projects in your Weblate instance
-- `get_project` - Get detailed information about a specific project
-- `create_project` - Create a new translation project
+- `listProjects` - List all available Weblate projects
+- Comprehensive project information with URLs and metadata
 
 ### Component Management
-- `list_components` - List all components in a project
-- `get_component` - Get detailed information about a component
-- `create_component` - Create a new translation component
+- `listComponents` - List components in a specific project
+- Component details with source language information
 
 ### Translation Management
-- `list_translations` - List all translations for a component
-- `get_translation` - Get detailed information about a translation
-- `update_translation` - Update translation strings
+- `searchStringInProject` - Search for translations containing specific text
+- `getTranslationForKey` - Get translation value for a specific key
+- `writeTranslation` - Update or write translation values with approval support
+- `searchTranslationsByKey` - Search for translations by key pattern
+- `findTranslationsForKey` - Find all translations for a specific key
+- `listTranslationKeys` - List all translation keys in a project
+- `searchTranslationKeys` - Search for translation keys by pattern
 
 ### Language Management
-- `list_languages` - List all available languages
-- `get_language` - Get detailed information about a language
+- `listLanguages` - List languages available in a specific project
+
+### 📊 Translation Statistics Dashboard
+- `getProjectStatistics` - Comprehensive project statistics with completion rates
+- `getComponentStatistics` - Detailed statistics for specific components
+- `getProjectDashboard` - Complete dashboard overview with all component statistics
+- `getTranslationStatistics` - Statistics for specific translation combinations
+- `getComponentLanguageProgress` - Translation progress for all languages in a component
+- `getLanguageStatistics` - Statistics for a language across all projects
+- `getUserStatistics` - User contribution statistics and activity metrics
+
+### 📈 Change Tracking & History
+- `listRecentChanges` - Recent changes across all projects with filtering
+- `getProjectChanges` - Recent changes for a specific project
+- `getComponentChanges` - Recent changes for a specific component
+- `getChangesByUser` - Recent changes by a specific user
 
 ## 🏗️ Architecture
 

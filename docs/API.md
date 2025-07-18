@@ -8,6 +8,8 @@ This document provides a comprehensive reference for all MCP tools available in 
 - [Component Management](#component-management)
 - [Translation Management](#translation-management)
 - [Language Management](#language-management)
+- [Translation Statistics Dashboard](#translation-statistics-dashboard)
+- [Change Tracking & History](#change-tracking--history)
 
 ---
 
@@ -522,10 +524,224 @@ You can generate an API token in your Weblate user settings under "API access".
 
 ---
 
+## Translation Statistics Dashboard
+
+### `getProjectStatistics`
+
+Get comprehensive statistics for a project including completion rates and string counts.
+
+**Parameters:**
+- `projectSlug` (string, required): The slug of the project
+
+**Returns:**
+```typescript
+{
+  name: string;
+  slug: string;
+  translated_percent: number;
+  approved_percent: number;
+  readonly_percent: number;
+  nottranslated_percent: number;
+  total: number;
+  translated: number;
+  approved: number;
+  nottranslated: number;
+  readonly: number;
+  web_url: string;
+  repository_url: string;
+}
+```
+
+**Example Response:**
+```json
+{
+  "name": "Amateri.com - frontend",
+  "slug": "amateri-com-frontend",
+  "translated_percent": 85.2,
+  "approved_percent": 78.1,
+  "readonly_percent": 5.3,
+  "nottranslated_percent": 14.8,
+  "total": 1250,
+  "translated": 1065,
+  "approved": 976,
+  "nottranslated": 185,
+  "readonly": 66,
+  "web_url": "https://translate.amateri.dev/projects/amateri-com-frontend/",
+  "repository_url": "https://github.com/example/repo"
+}
+```
+
+### `getComponentStatistics`
+
+Get detailed statistics for a specific component.
+
+**Parameters:**
+- `projectSlug` (string, required): The slug of the project
+- `componentSlug` (string, required): The slug of the component
+
+**Returns:** Same structure as `getProjectStatistics` but for a specific component.
+
+### `getProjectDashboard`
+
+Get a comprehensive dashboard overview for a project with all component statistics.
+
+**Parameters:**
+- `projectSlug` (string, required): The slug of the project
+
+**Returns:**
+```typescript
+{
+  project: ProjectStatistics;
+  components: Array<{
+    component: string;
+    slug: string;
+    statistics: ComponentStatistics | null;
+    error?: string;
+  }>;
+}
+```
+
+**Example Response:**
+```json
+{
+  "project": {
+    "name": "Amateri.com - frontend",
+    "translated_percent": 85.2,
+    "total": 1250
+  },
+  "components": [
+    {
+      "component": "common",
+      "slug": "common",
+      "statistics": {
+        "translated_percent": 92.5,
+        "total": 300
+      }
+    }
+  ]
+}
+```
+
+### `getTranslationStatistics`
+
+Get statistics for a specific translation (project/component/language combination).
+
+**Parameters:**
+- `projectSlug` (string, required): The slug of the project
+- `componentSlug` (string, required): The slug of the component
+- `languageCode` (string, required): The language code (e.g., en, es, fr)
+
+**Returns:** Translation-specific statistics including quality metrics.
+
+### `getComponentLanguageProgress`
+
+Get translation progress for all languages in a component.
+
+**Parameters:**
+- `projectSlug` (string, required): The slug of the project
+- `componentSlug` (string, required): The slug of the component
+
+**Returns:**
+```typescript
+Array<{
+  language: string;
+  code: string;
+  statistics: TranslationStatistics | null;
+  error?: string;
+}>
+```
+
+### `getLanguageStatistics`
+
+Get statistics for a specific language across all projects.
+
+**Parameters:**
+- `languageCode` (string, required): The language code (e.g., en, es, fr)
+
+**Returns:** Language-wide statistics across all projects.
+
+### `getUserStatistics`
+
+Get contribution statistics for a specific user.
+
+**Parameters:**
+- `username` (string, required): The username to get statistics for
+
+**Returns:**
+```typescript
+{
+  username: string;
+  full_name: string;
+  email: string;
+  date_joined: string;
+  translated: number;
+  approved: number;
+  suggestions: number;
+  comments: number;
+  total_changes: number;
+  last_login: string;
+}
+```
+
+---
+
+## Change Tracking & History
+
+### `listRecentChanges`
+
+List recent changes across all projects in Weblate.
+
+**Parameters:**
+- `limit` (number, optional): Number of changes to return (default: 20)
+- `user` (string, optional): Filter by specific user
+- `timestampAfter` (string, optional): Show changes after this timestamp (ISO format)
+- `timestampBefore` (string, optional): Show changes before this timestamp (ISO format)
+
+**Returns:**
+```typescript
+{
+  results: Change[];
+  count: number;
+}
+```
+
+### `getProjectChanges`
+
+Get recent changes for a specific project.
+
+**Parameters:**
+- `projectSlug` (string, required): The slug of the project
+
+**Returns:** List of changes specific to the project.
+
+### `getComponentChanges`
+
+Get recent changes for a specific component.
+
+**Parameters:**
+- `projectSlug` (string, required): The slug of the project
+- `componentSlug` (string, required): The slug of the component
+
+**Returns:** List of changes specific to the component.
+
+### `getChangesByUser`
+
+Get recent changes by a specific user.
+
+**Parameters:**
+- `user` (string, required): Username to filter by
+- `limit` (number, optional): Number of changes to return (default: 20)
+
+**Returns:** List of changes made by the specified user.
+
+---
+
 ## Best Practices
 
 1. **Use specific slugs**: Always use the exact project and component slugs
 2. **Handle pagination**: Large result sets may be paginated
 3. **Check permissions**: Ensure your API token has the necessary permissions
 4. **Validate input**: Provide valid parameters to avoid errors
-5. **Monitor rate limits**: Be mindful of API rate limiting 
+5. **Monitor rate limits**: Be mindful of API rate limiting
+6. **Statistics caching**: Statistics may be cached and updated periodically
+7. **Dashboard performance**: Use `getProjectDashboard` for comprehensive overviews instead of multiple individual calls 
