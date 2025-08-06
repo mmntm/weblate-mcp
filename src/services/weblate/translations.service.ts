@@ -178,12 +178,15 @@ export class WeblateTranslationsService {
 
       const client = this.weblateClientService.getClient();
       
+      // Parse plural forms correctly for the target field using language-specific rules
+      const targetArray = this.parsePluralForms(value, unit.source, languageCode);
+      
       // Update the translation using the units API
       const response = await unitsPartialUpdate({
         client,
         path: { id: unit.id.toString() },
         body: {
-          target: [value], // Weblate expects array of strings
+          target: targetArray, // Properly parsed plural forms
           state: markAsApproved ? 30 : 20, // 30 = approved, 20 = translated
         },
       });
@@ -409,5 +412,125 @@ export class WeblateTranslationsService {
         `Failed to search units: ${error.message}`,
       );
     }
+  }
+
+  /**
+   * Language-specific pluralization rules mapping
+   * Based on CLDR (Unicode Common Locale Data Repository) rules
+   */
+  private readonly PLURALIZATION_RULES = {
+    // 2 forms: singular (n=1), plural (n!=1)
+    'en': { forms: 2, rule: 'n != 1' },  // English
+    'de': { forms: 2, rule: 'n != 1' },  // German
+    'es': { forms: 2, rule: 'n != 1' },  // Spanish
+    'fr': { forms: 2, rule: 'n > 1' },   // French
+    'it': { forms: 2, rule: 'n != 1' },  // Italian
+    'pt': { forms: 2, rule: 'n != 1' },  // Portuguese
+    'nl': { forms: 2, rule: 'n != 1' },  // Dutch
+    'da': { forms: 2, rule: 'n != 1' },  // Danish
+    'sv': { forms: 2, rule: 'n != 1' },  // Swedish
+    'no': { forms: 2, rule: 'n != 1' },  // Norwegian
+    
+    // 3 forms: one, few, many/other
+    'cs': { forms: 3, rule: '(n==1) ? 0 : (n>=2 && n<=4) ? 1 : 2' },  // Czech
+    'sk': { forms: 3, rule: '(n==1) ? 0 : (n>=2 && n<=4) ? 1 : 2' },  // Slovak
+    'pl': { forms: 3, rule: '(n==1) ? 0 : (n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20)) ? 1 : 2' },  // Polish
+    'hr': { forms: 3, rule: '(n%10==1 && n%100!=11) ? 0 : (n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20)) ? 1 : 2' },  // Croatian
+    'sr': { forms: 3, rule: '(n%10==1 && n%100!=11) ? 0 : (n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20)) ? 1 : 2' },  // Serbian
+    
+    // 4 forms: one, few, many, other
+    'sl': { forms: 4, rule: '(n%100==1) ? 0 : (n%100==2) ? 1 : (n%100==3 || n%100==4) ? 2 : 3' },  // Slovenian
+    
+    // 6 forms: zero, one, two, few, many, other
+    'ar': { forms: 6, rule: '(n==0) ? 0 : (n==1) ? 1 : (n==2) ? 2 : (n%100>=3 && n%100<=10) ? 3 : (n%100>=11) ? 4 : 5' },  // Arabic
+    
+    // Default fallback for unknown languages
+    'default': { forms: 2, rule: 'n != 1' }
+  };
+
+  /**
+   * Get the expected number of plural forms for a language
+   */
+  private getExpectedPluralForms(languageCode: string): number {
+    const langRule = this.PLURALIZATION_RULES[languageCode] || this.PLURALIZATION_RULES['default'];
+    return langRule.forms;
+  }
+
+  /**
+   * Parse plural forms from a concatenated string into an array
+   * Uses language-specific pluralization rules to determine expected number of forms
+   */
+  private parsePluralForms(value: string, sourceArray: Array<string>, languageCode: string): Array<string> {
+    // If source is not an array or has only one element, treat as singular
+    if (!Array.isArray(sourceArray) || sourceArray.length <= 1) {
+      return [value];
+    }
+
+    // Get expected plural forms count based on language rules
+    const expectedPluralCount = this.getExpectedPluralForms(languageCode);
+    
+    // Fallback to source array length if it's different (might be source language specific)
+    const targetPluralCount = Math.max(expectedPluralCount, sourceArray.length);
+    
+    // For plural forms, split on the pattern where %d starts a new plural form
+    // This handles cases like "%d day%d days" -> ["%d day", "%d days"]
+    // Or "%d účastník%d účastníci%d účastníkov" -> ["%d účastník", "%d účastníci", "%d účastníkov"]
+    
+    // Enhanced splitting logic that handles various separators and patterns
+    let parts: string[] = [];
+    
+    // Method 1: Split by %d pattern (most common)
+    const percentDParts = value.split(/(?=%d)/g).filter(part => part.length > 0);
+    
+    if (percentDParts.length === targetPluralCount) {
+      parts = percentDParts;
+    } else if (percentDParts.length > 1) {
+      // Method 2: Try to intelligently redistribute parts
+      if (percentDParts.length > targetPluralCount) {
+        // Too many parts - combine excess with last expected part
+        parts = percentDParts.slice(0, targetPluralCount - 1);
+        parts.push(percentDParts.slice(targetPluralCount - 1).join(''));
+      } else {
+        // Too few parts - use what we have
+        parts = percentDParts;
+      }
+    } else {
+      // Method 3: Alternative splitting strategies for edge cases
+      
+      // Try splitting by common word boundaries in some languages
+      const wordBoundaryPattern = /(?<=%d\s+[^\s%]+)(?=\s*%d)|(?<=%d[^\s%]+)(?=%d)/g;
+      const wordParts = value.split(wordBoundaryPattern).filter(part => part.length > 0);
+      
+      if (wordParts.length === targetPluralCount) {
+        parts = wordParts;
+      } else {
+        // Final fallback: assume uniform distribution
+        const avgLength = Math.floor(value.length / targetPluralCount);
+        parts = [];
+        for (let i = 0; i < targetPluralCount; i++) {
+          const start = i * avgLength;
+          const end = i === targetPluralCount - 1 ? value.length : (i + 1) * avgLength;
+          parts.push(value.substring(start, end));
+        }
+      }
+    }
+    
+    // Ensure we have the correct number of parts
+    while (parts.length < targetPluralCount) {
+      parts.push(''); // Pad with empty strings if needed
+    }
+    
+    // Trim excess parts if we have too many
+    if (parts.length > targetPluralCount) {
+      parts = parts.slice(0, targetPluralCount);
+    }
+    
+    // Clean up parts - remove empty ones except if that would reduce count below minimum
+    const cleanedParts = parts.filter(part => part.trim().length > 0);
+    if (cleanedParts.length >= targetPluralCount) {
+      return cleanedParts.slice(0, targetPluralCount);
+    }
+    
+    return parts;
   }
 } 
