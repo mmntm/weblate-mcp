@@ -382,7 +382,7 @@ export class WeblateTranslationsTool {
     description: 'Search translation units using Weblate\'s powerful filtering syntax. Supports filters like: state:<translated (untranslated), state:>=translated (translated), component:NAME, source:TEXT, target:TEXT, has:suggestion, etc.',
     parameters: z.object({
       projectSlug: z.string().describe('The slug of the project'),
-      componentSlug: z.string().describe('The slug of the component'),
+      componentSlug: z.string().optional().describe('The slug of the component (optional, omit to search across all components)'),
       languageCode: z.string().describe('The language code (e.g., sk, cs, fr)'),
       searchQuery: z.string().describe('Weblate search query using their filter syntax. Examples: "state:<translated" (untranslated), "state:>=translated" (translated), "source:hello", "has:suggestion", "component:common AND state:<translated"'),
       limit: z.number().optional().default(50).describe('Maximum number of results to return (default: 50, max: 200)'),
@@ -396,7 +396,7 @@ export class WeblateTranslationsTool {
     limit = 50,
   }: {
     projectSlug: string;
-    componentSlug: string;
+    componentSlug?: string;
     languageCode: string;
     searchQuery: string;
     limit?: number;
@@ -410,18 +410,20 @@ export class WeblateTranslationsTool {
         Math.min(limit, 200), // Cap at 200 to prevent overwhelming responses
       );
 
+      const scope = this.formatScope(componentSlug, projectSlug, languageCode);
+
       if (results.length === 0) {
         return {
           content: [
             {
               type: 'text',
-              text: `No units found matching query "${searchQuery}" in ${projectSlug}/${componentSlug}/${languageCode}`,
+              text: `No units found matching query "${searchQuery}" in ${scope}`,
             },
           ],
         };
       }
 
-      const resultText = this.formatFilteredResults(results, projectSlug, componentSlug, languageCode, searchQuery);
+      const resultText = this.formatFilteredResults(results, scope, searchQuery);
       
       return {
         content: [
@@ -469,9 +471,9 @@ export class WeblateTranslationsTool {
 **ID:** ${translation.id}`;
   }
 
-  private formatFilteredResults(results: Unit[], projectSlug: string, componentSlug: string, languageCode: string, searchQuery: string): string {
+  private formatFilteredResults(results: Unit[], scope: string, searchQuery: string): string {
     if (results.length === 0) {
-      return `No units found in ${projectSlug}/${componentSlug}/${languageCode} matching query: ${searchQuery}`;
+      return `No units found in ${scope} matching query: ${searchQuery}`;
     }
 
     const formattedResults = results
@@ -506,6 +508,10 @@ export class WeblateTranslationsTool {
       ? `\n\n*Showing first 50 of ${results.length} units*`
       : '';
 
-    return `Found ${results.length} units in ${projectSlug}/${componentSlug}/${languageCode} matching query "${searchQuery}":\n\n${formattedResults}${totalText}`;
+    return `Found ${results.length} units in ${scope} matching query "${searchQuery}":\n\n${formattedResults}${totalText}`;
+  }
+
+  private formatScope(componentSlug: string | undefined, projectSlug: string, languageCode: string): string {
+    return componentSlug ? `${projectSlug}/${componentSlug}/${languageCode}` : `${projectSlug}/*/${languageCode}`;
   }
 } 
