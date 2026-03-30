@@ -359,3 +359,8 @@ MIT License - see [LICENSE](./LICENSE) file for details.
 **Built with ❤️ for the translation community**
 
 *Need help? Check our [documentation](./docs/) or create an [issue](https://github.com/mmntm/weblate-mcp/issues)!* 
+
+## Hosted deployment
+
+A hosted deployment is available on [Fronteir AI](https://fronteir.ai/mcp/mmntm-weblate-mcp).
+
