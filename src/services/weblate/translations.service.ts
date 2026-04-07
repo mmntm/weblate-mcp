@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { WeblateClientService } from '../weblate-client.service';
-import { unitsList, unitsPartialUpdate, translationsUnitsRetrieve, type Unit, type PaginatedUnitList, type UnitsListData, type TranslationsUnitsRetrieveData } from '../../client';
+import { unitsList, unitsPartialUpdate, translationsUnitsRetrieve, translationsUnitsCreate, type Unit, type PaginatedUnitList, type UnitsListData, type TranslationsUnitsRetrieveData, type TranslationsUnitsCreateData } from '../../client';
 import { SearchIn } from '../../types';
 
 @Injectable()
@@ -533,4 +533,55 @@ export class WeblateTranslationsService {
     
     return parts;
   }
-} 
+
+  /**
+   * Create a new translation unit in Weblate.
+   * Supports monolingual (key + value) and bilingual (context + source + target) formats.
+   */
+  async createTranslationUnit(
+    projectSlug: string,
+    componentSlug: string,
+    languageCode: string,
+    params: {
+      key?: string;
+      value?: string[];
+      context?: string;
+      source?: string[];
+      target?: string[];
+      state?: number;
+    },
+  ): Promise<Unit> {
+    try {
+      const client = this.weblateClientService.getClient();
+
+      // The generated SDK types model the body as `Translation`, but the
+      // Weblate unit creation endpoint accepts a subset of unit fields
+      // (key/value for monolingual, context/source/target for bilingual).
+      // Cast to work around inaccurate generated types.
+      const response = await translationsUnitsCreate({
+        client,
+        path: {
+          component__project__slug: projectSlug,
+          component__slug: componentSlug,
+          language__code: languageCode,
+        },
+        body: params as TranslationsUnitsCreateData['body'],
+      });
+
+      if (response.error) {
+        throw new Error(`API error: ${JSON.stringify(response.error)}`);
+      }
+
+      // Response is a Unit, not a Translation as the SDK declares
+      return response.data as unknown as Unit;
+    } catch (error) {
+      this.logger.error(
+        `Failed to create translation unit in ${projectSlug}/${componentSlug}/${languageCode}`,
+        error,
+      );
+      throw new Error(
+        `Failed to create translation unit: ${error.message}`,
+      );
+    }
+  }
+}
