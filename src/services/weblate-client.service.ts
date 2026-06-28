@@ -17,8 +17,12 @@ export class WeblateClientService {
       );
     }
 
-    // Ensure the API URL ends with /api
-    const baseUrl = apiUrl.endsWith('/api') ? apiUrl : apiUrl + '/api';
+    // Normalize: strip trailing slashes, then ensure exactly one /api suffix.
+    // Avoids a broken double "//api" base URL when WEBLATE_API_URL is given
+    // with a trailing slash (e.g. "https://host/api/"), which makes every
+    // request 404 against the web UI instead of the REST API.
+    const trimmed = apiUrl.replace(/\/+$/, '');
+    const baseUrl = trimmed.endsWith('/api') ? trimmed : `${trimmed}/api`;
 
     this.client = createClient({
       baseUrl,

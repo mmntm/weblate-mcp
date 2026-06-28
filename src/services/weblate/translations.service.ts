@@ -162,6 +162,7 @@ export class WeblateTranslationsService {
     key: string,
     value: string,
     markAsApproved: boolean = false,
+    markAsNeedsEditing: boolean = false,
   ): Promise<Unit | null> {
     try {
       // First, find the translation unit by key
@@ -187,7 +188,7 @@ export class WeblateTranslationsService {
         path: { id: unit.id.toString() },
         body: {
           target: targetArray, // Properly parsed plural forms
-          state: markAsApproved ? 30 : 20, // 30 = approved, 20 = translated
+          state: markAsNeedsEditing ? 10 : markAsApproved ? 30 : 20, // 10 = needs editing (fuzzy), 20 = translated, 30 = approved
         },
       });
 
@@ -211,6 +212,7 @@ export class WeblateTranslationsService {
       key: string;
       value: string;
       markAsApproved?: boolean;
+      markAsNeedsEditing?: boolean;
     }>,
   ): Promise<{
     successful: Array<{ key: string; unit: Unit }>;
@@ -234,7 +236,7 @@ export class WeblateTranslationsService {
     }
 
     for (const chunk of chunks) {
-      const promises = chunk.map(async ({ key, value, markAsApproved = false }) => {
+      const promises = chunk.map(async ({ key, value, markAsApproved = false, markAsNeedsEditing = false }) => {
         try {
           const updatedUnit = await this.writeTranslation(
             projectSlug,
@@ -243,6 +245,7 @@ export class WeblateTranslationsService {
             key,
             value,
             markAsApproved,
+            markAsNeedsEditing,
           );
 
           if (updatedUnit) {
@@ -274,6 +277,100 @@ export class WeblateTranslationsService {
       failed,
       summary,
     };
+  }
+
+  /**
+   * Write a translation directly by unit id (no key lookup). Faster and
+   * unambiguous for batch operations where unit ids are already known
+   * (e.g. from searchUnitsWithQuery). `value` may be a string or, for plural
+   * languages, a pre-split array of plural forms.
+   */
+  async writeTranslationById(
+    unitId: number | string,
+    value: string | string[],
+    options: { markAsApproved?: boolean; markAsNeedsEditing?: boolean } = {},
+  ): Promise<Unit | null> {
+    const { markAsApproved = false, markAsNeedsEditing = false } = options;
+    try {
+      const client = this.weblateClientService.getClient();
+      const targetArray = Array.isArray(value) ? value : [value];
+
+      const response = await unitsPartialUpdate({
+        client,
+        path: { id: unitId.toString() },
+        body: {
+          target: targetArray,
+          state: markAsNeedsEditing ? 10 : markAsApproved ? 30 : 20, // 10 = needs editing (fuzzy), 20 = translated, 30 = approved
+        },
+      });
+
+      return response.data as Unit;
+    } catch (error) {
+      this.logger.error(`Failed to write translation for unit ${unitId}`, error);
+      throw new Error(
+        `Failed to write translation for unit ${unitId}: ${error.message}`,
+      );
+    }
+  }
+
+  /**
+   * Bulk-write translations by unit id with bounded concurrency. Each item is
+   * { id, value, markAsApproved?, markAsNeedsEditing? }.
+   */
+  async bulkWriteTranslationsById(
+    units: Array<{
+      id: number | string;
+      value: string | string[];
+      markAsApproved?: boolean;
+      markAsNeedsEditing?: boolean;
+    }>,
+  ): Promise<{
+    successful: Array<{ id: number | string; unit: Unit }>;
+    failed: Array<{ id: number | string; error: string }>;
+    summary: { total: number; successful: number; failed: number };
+  }> {
+    const successful: Array<{ id: number | string; unit: Unit }> = [];
+    const failed: Array<{ id: number | string; error: string }> = [];
+
+    this.logger.log(`Starting bulk update of ${units.length} units by id`);
+
+    const concurrencyLimit = 5;
+    const chunks = [];
+    for (let i = 0; i < units.length; i += concurrencyLimit) {
+      chunks.push(units.slice(i, i + concurrencyLimit));
+    }
+
+    for (const chunk of chunks) {
+      const promises = chunk.map(
+        async ({ id, value, markAsApproved = false, markAsNeedsEditing = false }) => {
+          try {
+            const unit = await this.writeTranslationById(id, value, {
+              markAsApproved,
+              markAsNeedsEditing,
+            });
+            if (unit) {
+              successful.push({ id, unit });
+            } else {
+              failed.push({ id, error: 'No unit returned from update' });
+            }
+          } catch (error) {
+            failed.push({ id, error: error.message });
+            this.logger.warn(`Failed to update unit ${id}: ${error.message}`);
+          }
+        },
+      );
+      await Promise.allSettled(promises);
+    }
+
+    const summary = {
+      total: units.length,
+      successful: successful.length,
+      failed: failed.length,
+    };
+
+    this.logger.log(`Bulk-by-id update completed: ${summary.successful}/${summary.total} successful, ${summary.failed} failed`);
+
+    return { successful, failed, summary };
   }
 
   async findTranslationsForKey(
@@ -377,13 +474,14 @@ export class WeblateTranslationsService {
     try {
       const client = this.weblateClientService.getClient();
       
-      // Build the complete search query by combining user query with scope filters
+      // Query the translation-scoped units endpoint (project/component/language as
+      // Build the combined query: user filter + project/component/language scope.
       const queryParts = [searchQuery];
       queryParts.push(`project:${projectSlug}`);
       queryParts.push(`component:${componentSlug}`);
       queryParts.push(`language:${languageCode}`);
-      
-      // Use the generated SDK with extended types to include the missing 'q' parameter
+
+      // Use the generated SDK with extended types to include the missing 'q' param.
       const options: UnitsListData & { query?: { q?: string; page_size?: number } } = {
         url: '/units/',
         query: {
@@ -396,11 +494,11 @@ export class WeblateTranslationsService {
         client,
         ...options,
       });
-      
+
       if (response.error) {
         throw new Error(`API error: ${JSON.stringify(response.error)}`);
       }
-      
+
       const data = response.data as PaginatedUnitList;
       return data.results || [];
     } catch (error) {

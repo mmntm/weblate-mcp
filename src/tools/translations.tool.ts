@@ -161,6 +161,11 @@ export class WeblateTranslationsTool {
         .optional()
         .describe('Whether to mark as approved (default: false)')
         .default(false),
+      markAsNeedsEditing: z
+        .boolean()
+        .optional()
+        .describe('Mark as "Needs editing" (fuzzy, Weblate state 10) for review. Takes precedence over markAsApproved.')
+        .default(false),
     }),
   })
   async writeTranslation({
@@ -170,6 +175,7 @@ export class WeblateTranslationsTool {
     key,
     value,
     markAsApproved = false,
+    markAsNeedsEditing = false,
   }: {
     projectSlug: string;
     componentSlug: string;
@@ -177,6 +183,7 @@ export class WeblateTranslationsTool {
     key: string;
     value: string;
     markAsApproved?: boolean;
+    markAsNeedsEditing?: boolean;
   }) {
     try {
       const updatedUnit = await this.weblateApiService.writeTranslation(
@@ -186,6 +193,7 @@ export class WeblateTranslationsTool {
         key,
         value,
         markAsApproved,
+        markAsNeedsEditing,
       );
 
       return {
@@ -223,6 +231,7 @@ export class WeblateTranslationsTool {
         key: z.string().describe('The translation key to update'),
         value: z.string().describe('The new translation value'),
         markAsApproved: z.boolean().optional().describe('Whether to mark as approved (default: false)').default(false),
+        markAsNeedsEditing: z.boolean().optional().describe('Mark as "Needs editing" (fuzzy, state 10). Takes precedence over markAsApproved.').default(false),
       })).describe('Array of translations to update'),
     }),
   })
@@ -239,6 +248,7 @@ export class WeblateTranslationsTool {
       key: string;
       value: string;
       markAsApproved?: boolean;
+      markAsNeedsEditing?: boolean;
     }>;
   }) {
     try {
@@ -294,6 +304,94 @@ export class WeblateTranslationsTool {
             text: `Error during bulk translation update: ${error.message}`,
           },
         ],
+        isError: true,
+      };
+    }
+  }
+
+  @Tool({
+    name: 'writeTranslationById',
+    description: 'Write/update a translation directly by its numeric unit id (no key lookup). Use ids returned by searchUnitsWithFilters. Set markAsNeedsEditing to save as fuzzy ("Needs editing") for review.',
+    parameters: z.object({
+      unitId: z.union([z.number(), z.string()]).describe('The numeric unit id to update'),
+      value: z.string().describe('The new translation value'),
+      markAsApproved: z.boolean().optional().describe('Mark as approved (state 30, default: false)').default(false),
+      markAsNeedsEditing: z.boolean().optional().describe('Mark as "Needs editing" (fuzzy, state 10). Takes precedence over markAsApproved.').default(false),
+    }),
+  })
+  async writeTranslationById({
+    unitId,
+    value,
+    markAsApproved = false,
+    markAsNeedsEditing = false,
+  }: {
+    unitId: number | string;
+    value: string;
+    markAsApproved?: boolean;
+    markAsNeedsEditing?: boolean;
+  }) {
+    try {
+      const updatedUnit = await this.weblateApiService.writeTranslationById(unitId, value, {
+        markAsApproved,
+        markAsNeedsEditing,
+      });
+      return {
+        content: [
+          {
+            type: 'text',
+            text: updatedUnit
+              ? `Successfully updated unit ${unitId}\n\n${this.formatTranslationResult(updatedUnit)}`
+              : `Failed to update unit ${unitId}`,
+          },
+        ],
+      };
+    } catch (error) {
+      this.logger.error(`Failed to write translation for unit ${unitId}`, error);
+      return {
+        content: [{ type: 'text', text: `Error writing translation for unit ${unitId}: ${error.message}` }],
+        isError: true,
+      };
+    }
+  }
+
+  @Tool({
+    name: 'bulkWriteTranslationsById',
+    description: 'Bulk write/update translations by numeric unit id. Efficient for large batches where ids are already known (from searchUnitsWithFilters). Supports per-item markAsNeedsEditing (fuzzy).',
+    parameters: z.object({
+      units: z.array(z.object({
+        id: z.union([z.number(), z.string()]).describe('The numeric unit id'),
+        value: z.string().describe('The new translation value'),
+        markAsApproved: z.boolean().optional().describe('Mark as approved (state 30)').default(false),
+        markAsNeedsEditing: z.boolean().optional().describe('Mark as "Needs editing" (fuzzy, state 10). Takes precedence over markAsApproved.').default(false),
+      })).describe('Array of units to update by id'),
+    }),
+  })
+  async bulkWriteTranslationsById({
+    units,
+  }: {
+    units: Array<{ id: number | string; value: string; markAsApproved?: boolean; markAsNeedsEditing?: boolean }>;
+  }) {
+    try {
+      const result = await this.weblateApiService.bulkWriteTranslationsById(units);
+      let resultText = `Bulk update by id completed\n\n`;
+      resultText += `📊 **Summary:**\n`;
+      resultText += `- Total: ${result.summary.total}\n`;
+      resultText += `- ✅ Successful: ${result.summary.successful}\n`;
+      resultText += `- ❌ Failed: ${result.summary.failed}\n`;
+      if (result.failed.length > 0) {
+        resultText += `\n❌ **Failed (${result.failed.length}):**\n`;
+        result.failed.slice(0, 10).forEach(({ id, error }) => {
+          resultText += `- ${id}: ${error}\n`;
+        });
+        if (result.failed.length > 10) {
+          resultText += `... and ${result.failed.length - 10} more failures\n`;
+        }
+      }
+      return { content: [{ type: 'text', text: resultText }] };
+    } catch (error) {
+      this.logger.error(`Failed to bulk write translations by id`, error);
+      return {
+        content: [{ type: 'text', text: `Error during bulk update by id: ${error.message}` }],
         isError: true,
       };
     }

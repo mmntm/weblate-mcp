@@ -96,6 +96,7 @@ export class WeblateApiService {
     key: string,
     value: string,
     markAsApproved: boolean = false,
+    markAsNeedsEditing: boolean = false,
   ): Promise<Unit | null> {
     return this.translationsService.writeTranslation(
       projectSlug,
@@ -104,6 +105,7 @@ export class WeblateApiService {
       key,
       value,
       markAsApproved,
+      markAsNeedsEditing,
     );
   }
 
@@ -115,6 +117,7 @@ export class WeblateApiService {
       key: string;
       value: string;
       markAsApproved?: boolean;
+      markAsNeedsEditing?: boolean;
     }>,
   ): Promise<{
     successful: Array<{ key: string; unit: Unit }>;
@@ -131,6 +134,29 @@ export class WeblateApiService {
       languageCode,
       translations,
     );
+  }
+
+  async writeTranslationById(
+    unitId: number | string,
+    value: string | string[],
+    options: { markAsApproved?: boolean; markAsNeedsEditing?: boolean } = {},
+  ): Promise<Unit | null> {
+    return this.translationsService.writeTranslationById(unitId, value, options);
+  }
+
+  async bulkWriteTranslationsById(
+    units: Array<{
+      id: number | string;
+      value: string | string[];
+      markAsApproved?: boolean;
+      markAsNeedsEditing?: boolean;
+    }>,
+  ): Promise<{
+    successful: Array<{ id: number | string; unit: Unit }>;
+    failed: Array<{ id: number | string; error: string }>;
+    summary: { total: number; successful: number; failed: number };
+  }> {
+    return this.translationsService.bulkWriteTranslationsById(units);
   }
 
   async searchTranslationKeys(
