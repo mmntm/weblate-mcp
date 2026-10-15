@@ -1,0 +1,3 @@
+# @nestjs/core only has an Open Collective postinstall banner; current pnpm fails install on unreviewed build scripts
+allowBuilds:
+  "@nestjs/core": false
