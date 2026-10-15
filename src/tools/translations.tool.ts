@@ -4,6 +4,14 @@ import { z } from 'zod';
 import { WeblateApiService } from '../services';
 import { type Unit } from '../client';
 
+const translationValueSchema = z
+  .union([z.string(), z.array(z.string()).min(1)])
+  .describe('The new translation value. For a plural unit pass an array with one string per plural form, in the order of the language plural forms');
+
+/** Plural forms are joined with a visible separator, so that a wrong split is noticeable */
+const formatUnitText = (text?: string | string[]): string =>
+  (Array.isArray(text) ? text.join(' | ') : text) || '(empty)';
+
 @Injectable()
 export class WeblateTranslationsTool {
   private readonly logger = new Logger(WeblateTranslationsTool.name);
@@ -155,7 +163,7 @@ export class WeblateTranslationsTool {
       componentSlug: z.string().describe('The slug of the component'),
       languageCode: z.string().describe('The language code (e.g., en, es, fr)'),
       key: z.string().describe('The translation key to update'),
-      value: z.string().describe('The new translation value'),
+      value: translationValueSchema,
       markAsApproved: z
         .boolean()
         .optional()
@@ -175,7 +183,7 @@ export class WeblateTranslationsTool {
     componentSlug: string;
     languageCode: string;
     key: string;
-    value: string;
+    value: string | string[];
     markAsApproved?: boolean;
   }) {
     try {
@@ -221,7 +229,7 @@ export class WeblateTranslationsTool {
       languageCode: z.string().describe('The language code (e.g., en, es, fr)'),
       translations: z.array(z.object({
         key: z.string().describe('The translation key to update'),
-        value: z.string().describe('The new translation value'),
+        value: translationValueSchema,
         markAsApproved: z.boolean().optional().describe('Whether to mark as approved (default: false)').default(false),
       })).describe('Array of translations to update'),
     }),
@@ -237,7 +245,7 @@ export class WeblateTranslationsTool {
     languageCode: string;
     translations: Array<{
       key: string;
-      value: string;
+      value: string | string[];
       markAsApproved?: boolean;
     }>;
   }) {
@@ -452,13 +460,8 @@ export class WeblateTranslationsTool {
         ? '📝 Translated'
         : '❌ Untranslated';
 
-    const sourceText = translation.source && Array.isArray(translation.source) 
-      ? translation.source.join('') 
-      : (translation.source || '(empty)');
-    
-    const targetText = translation.target && Array.isArray(translation.target) 
-      ? translation.target.join('') 
-      : (translation.target || '(empty)');
+    const sourceText = formatUnitText(translation.source);
+    const targetText = formatUnitText(translation.target);
 
     return `**Key:** ${translation.context}
 **Source:** ${sourceText}
@@ -477,12 +480,8 @@ export class WeblateTranslationsTool {
     const formattedResults = results
       .slice(0, 50) // Limit to 50 for readability
       .map(unit => {
-        const sourceText = unit.source && Array.isArray(unit.source) 
-          ? unit.source.join('') 
-          : (unit.source || '(empty)');
-        const targetText = unit.target && Array.isArray(unit.target) 
-          ? unit.target.join('') 
-          : (unit.target || '(empty)');
+        const sourceText = formatUnitText(unit.source);
+        const targetText = formatUnitText(unit.target);
 
         // Determine status based on state
         let status = '❓ Unknown';
