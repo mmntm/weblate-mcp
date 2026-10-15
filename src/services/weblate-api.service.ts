@@ -94,7 +94,7 @@ export class WeblateApiService {
     componentSlug: string,
     languageCode: string,
     key: string,
-    value: string,
+    value: string | string[],
     markAsApproved: boolean = false,
   ): Promise<Unit | null> {
     return this.translationsService.writeTranslation(
@@ -113,7 +113,7 @@ export class WeblateApiService {
     languageCode: string,
     translations: Array<{
       key: string;
-      value: string;
+      value: string | string[];
       markAsApproved?: boolean;
     }>,
   ): Promise<{

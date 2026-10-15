@@ -160,7 +160,7 @@ export class WeblateTranslationsService {
     componentSlug: string,
     languageCode: string,
     key: string,
-    value: string,
+    value: string | string[],
     markAsApproved: boolean = false,
   ): Promise<Unit | null> {
     try {
@@ -178,8 +178,10 @@ export class WeblateTranslationsService {
 
       const client = this.weblateClientService.getClient();
       
-      // Parse plural forms correctly for the target field using language-specific rules
-      const targetArray = this.parsePluralForms(value, unit.source, languageCode);
+      // Explicit plural forms are sent as they are; a single string is split heuristically
+      const targetArray = Array.isArray(value)
+        ? value
+        : this.parsePluralForms(value, unit.source, languageCode);
       
       // Update the translation using the units API
       const response = await unitsPartialUpdate({
@@ -209,7 +211,7 @@ export class WeblateTranslationsService {
     languageCode: string,
     translations: Array<{
       key: string;
-      value: string;
+      value: string | string[];
       markAsApproved?: boolean;
     }>,
   ): Promise<{
