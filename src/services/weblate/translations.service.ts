@@ -94,10 +94,15 @@ export class WeblateTranslationsService {
         projectSlug,
         componentSlug,
         languageCode,
-        `context:"${key}"`,
+        `context:=${JSON.stringify(key)}`,
       );
 
-      return searchResult.results.length > 0 ? searchResult.results[0] : null;
+      const matches = searchResult.results.filter((unit) => unit.context === key);
+      if (matches.length > 1 || searchResult.next) {
+        throw new Error(`Ambiguous translation key "${key}"`);
+      }
+
+      return matches[0] || null;
     } catch (error) {
       this.logger.error(`Failed to get translation for key ${key}`, error);
       throw new Error(
@@ -288,10 +293,10 @@ export class WeblateTranslationsService {
         projectSlug,
         componentSlug,
         undefined,
-        `context:"${key}"`,
+        `context:=${JSON.stringify(key)}`,
       );
 
-      return searchResult.results;
+      return searchResult.results.filter((unit) => unit.context === key);
     } catch (error) {
       this.logger.error(
         `Failed to find translations for key "${key}" in project ${projectSlug}`,

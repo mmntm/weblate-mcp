@@ -258,7 +258,7 @@ Search for translations containing specific text across a project.
 
 ### `getTranslationForKey`
 
-Get translation value for a specific key in a project.
+Get translation value for an exact, case-sensitive key in a project. Ambiguous or incomplete lookups return an error.
 
 **Parameters:**
 - `projectSlug` (string, required): The slug of the project
@@ -283,7 +283,7 @@ Get translation value for a specific key in a project.
 
 ### `writeTranslation`
 
-Update or write a translation value for a specific key.
+Update or write a translation value for an exact, case-sensitive key. If the key is missing or the lookup is ambiguous or incomplete, no unit is updated.
 
 **Parameters:**
 - `projectSlug` (string, required): The slug of the project
