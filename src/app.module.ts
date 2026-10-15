@@ -41,6 +41,7 @@ Translation Management:
 - searchStringInProject: Search for translations containing specific text
 - getTranslationForKey: Get translation value for a specific key
 - writeTranslation: Write or update a translation value
+- createTranslationUnit: Create a new translation unit (key) - supports monolingual and bilingual formats
 - searchTranslationsByKey: Search for translations by key pattern
 - findTranslationsForKey: Find all translations for a specific key
 - listTranslationKeys: List all translation keys in a project

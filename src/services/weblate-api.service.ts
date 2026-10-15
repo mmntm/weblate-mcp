@@ -210,4 +210,29 @@ export class WeblateApiService {
       limit,
     );
   }
+
+  /**
+   * Create a new translation unit in Weblate.
+   * Supports monolingual (key + value) and bilingual (context + source + target) formats.
+   */
+  async createTranslationUnit(
+    projectSlug: string,
+    componentSlug: string,
+    languageCode: string,
+    params: {
+      key?: string;
+      value?: string[];
+      context?: string;
+      source?: string[];
+      target?: string[];
+      state?: number;
+    },
+  ): Promise<Unit> {
+    return this.translationsService.createTranslationUnit(
+      projectSlug,
+      componentSlug,
+      languageCode,
+      params,
+    );
+  }
 }
