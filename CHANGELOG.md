@@ -1,5 +1,11 @@
 # weblate-mcp-server
 
+## 1.3.2
+
+### Patch Changes
+
+- d960a72: writeTranslation and bulkWriteTranslations accept an array of plural forms as `value`, sent to Weblate as is. Plural forms are shown separated by `|` instead of being concatenated.
+
 ## 1.3.1
 
 ### Patch Changes
