@@ -197,7 +197,7 @@ export class WeblateApiService {
 
   async searchUnitsWithQuery(
     projectSlug: string,
-    componentSlug: string,
+    componentSlug: string | undefined,
     languageCode: string,
     searchQuery: string,
     limit: number = 50,

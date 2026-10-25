@@ -371,7 +371,7 @@ export class WeblateTranslationsService {
    */
   async searchUnitsWithQuery(
     projectSlug: string,
-    componentSlug: string,
+    componentSlug: string | undefined,
     languageCode: string,
     searchQuery: string,
     limit: number = 50,
@@ -382,7 +382,9 @@ export class WeblateTranslationsService {
       // Build the complete search query by combining user query with scope filters
       const queryParts = [searchQuery];
       queryParts.push(`project:${projectSlug}`);
-      queryParts.push(`component:${componentSlug}`);
+      if (componentSlug) {
+        queryParts.push(`component:${componentSlug}`);
+      }
       queryParts.push(`language:${languageCode}`);
       
       // Use the generated SDK with extended types to include the missing 'q' parameter
@@ -407,7 +409,7 @@ export class WeblateTranslationsService {
       return data.results || [];
     } catch (error) {
       this.logger.error(
-        `Failed to search units with query "${searchQuery}" in ${projectSlug}/${componentSlug}/${languageCode}`,
+        `Failed to search units with query "${searchQuery}" in ${projectSlug}/${componentSlug ?? '*'}/${languageCode}`,
         error,
       );
       throw new Error(
