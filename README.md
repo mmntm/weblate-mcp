@@ -10,7 +10,7 @@ A [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) server that p
 - **🔍 Component Operations**: Handle translation components and configurations
 - **✏️ Translation Management**: Update, search, and manage translations
 - **🌐 Language Support**: Work with all supported languages in your Weblate instance
-- **🚀 Multiple Transports**: HTTP/SSE, Streamable HTTP, and STDIO support
+- **🚀 Multiple Transports**: STDIO (default) and Streamable HTTP (`MCP_TRANSPORT=http`)
 - **🛡️ Type Safety**: Full TypeScript implementation with comprehensive error handling
 - **⚡ LLM-Optimized**: Tools designed to guide AI models toward efficient usage patterns
 
@@ -74,16 +74,20 @@ pnpm build
 pnpm start
 ```
 
-Server runs on `http://localhost:3001` by default.
+By default the server speaks MCP over STDIO. To serve it over HTTP instead, set `MCP_TRANSPORT=http`: the server then listens on `0.0.0.0:$PORT` (3000 if `PORT` is unset) with the MCP endpoint at `/mcp`.
 
 ### Environment Configuration
 ```env
 WEBLATE_API_URL=https://your-weblate-instance.com
 WEBLATE_API_TOKEN=your-api-token-here
+# Optional: serve MCP over Streamable HTTP instead of STDIO
+MCP_TRANSPORT=http
 PORT=3001
 NODE_ENV=production
 LOG_LEVEL=info
 ```
+
+> **Security**: the HTTP endpoint has no authentication of its own. Keep it bound to localhost or put it behind an authenticating proxy.
 
 ## 🔗 MCP Client Configuration
 
@@ -122,6 +126,7 @@ For development or local builds:
 ```
 
 ### HTTP Clients (Cursor, VS Code, Web Apps)
+Start the server with `MCP_TRANSPORT=http` and `PORT=3001`, then point the client at it:
 ```json
 {
   "transport": "http",

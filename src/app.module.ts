@@ -30,7 +30,10 @@ import { randomUUID } from 'crypto';
     McpModule.forRoot({
       name: process.env.MCP_SERVER_NAME || 'weblate-mcp-server',
       version: process.env.MCP_SERVER_VERSION || '1.0.0',
-      transport: McpTransportType.STDIO,
+      transport:
+        process.env.MCP_TRANSPORT === 'http'
+          ? McpTransportType.STREAMABLE_HTTP
+          : McpTransportType.STDIO,
       instructions: `This is a Weblate MCP server that provides tools for managing translations.
       
 Available tools:
